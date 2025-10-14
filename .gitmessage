@@ -1,0 +1,33 @@
+# === Conventional Commit Template ===
+# Format: <type>: <short summary>
+# Example: feat: implement PMX crossover operator
+
+# --- Header (max 72 chars) ---
+# <type>: <summary>
+
+# --- Body (optional, wrap at 100 chars) ---
+# Start each line with a dash describing what was changed and why.
+# If the header fully explains the change, this section can be omitted.
+
+# header examples:
+# feat: implement initial GA population generator
+# fix: correct distance matrix calculation for symmetric TSP
+# refactor: extract crossover and mutation into separate modules
+# docs: update project structure description in README.md
+# test: add reproducibility check for multiple seeds
+# chore: initialize project structure and base files
+# remove: eliminate deprecated functions from GA module
+
+# body examples:
+# - added PMX and OX crossover functions to GA module
+# - fixed distance matrix symmetry issue in tsp_utils.py
+# - refactored initialization logic for population generation
+
+# === Commit types ===
+# feat:     add a new feature or functionality
+# fix:      correct a bug or error
+# refactor: restructure code without changing behavior
+# docs:     update or improve documentation
+# test:     add or modify tests
+# chore:    maintenance, configuration, or setup changes
+# remove:   delete unused files, code, or dependencies

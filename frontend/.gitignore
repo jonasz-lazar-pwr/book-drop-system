@@ -1,0 +1,12 @@
+# === Angular build outputs ===
+/dist
+/tmp
+/out-tsc
+/.angular/cache
+/coverage
+
+# === Angular artifacts ===
+/bazel-out
+/typings
+/__screenshots__/
+/connect.lock

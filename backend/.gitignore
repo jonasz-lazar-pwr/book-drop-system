@@ -1,0 +1,19 @@
+# === Python cache & build ===
+__pycache__/
+*.py[cod]
+*.log
+*.sqlite3
+
+# === Virtual environments ===
+/venv/
+/.env
+.venv/
+
+# === Testing ===
+.coverage
+.pytest_cache/
+.mypy_cache/
+
+# === IDE ===
+.vscode/
+.idea/

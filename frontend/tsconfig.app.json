@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/app",
+    "baseUrl": "src",
+    "types": [],
+    "paths": {
+      "@pages/*": ["app/pages/*"],
+      "@interceptors/*": ["app/interceptors/*"],
+      "@guards/*": ["app/guards/*"],
+      "@services/*": ["app/services/*"],
+      "@shared/*": ["app/shared/*"],
+      "@environments/*": ["environments/*"],
+      "@assets/*": ["assets/*"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.spec.ts"]
+}

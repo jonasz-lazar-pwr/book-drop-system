@@ -1,0 +1,59 @@
+# === System / OS ===
+.DS_Store
+Thumbs.db
+*.log
+*.zip
+*.sh
+
+# === Environment files (never include secrets) ===
+.env
+.env.*
+!.env.example
+
+# === Docker ===
+.dockerignore
+docker-compose*
+Dockerfile.dev
+*.zipignore
+
+# === Git ===
+.git/
+.gitignore
+.gitattributes
+
+# === Editors / IDEs ===
+.idea/
+.vscode/
+
+# === Node & Angular build output ===
+node_modules/
+.angular/
+dist/
+tmp/
+out/
+.cache/
+.angular/cache/
+
+# === Tests & dev configs ===
+*.spec.ts
+karma.conf.js
+jest.config.js
+tsconfig.spec.json
+
+# === Non-runtime configuration ===
+.editorconfig
+eslint.config.js
+.prettier*
+README.md
+LICENSE
+
+# === TypeScript artifacts ===
+*.tsbuildinfo
+
+# === Local databases / lock files ===
+*.db
+*.db-lock
+
+# === Angular build metadata ===
+dist/frontend/prerendered-routes.json
+dist/frontend/3rdpartylicenses.txt
