@@ -1,8 +1,13 @@
 docker-compose down -v
 docker-compose up --build -d
 
-docker-compose down -v
-docker-compose build --no-cache
-docker-compose up -d
+docker exec -it bookdrop-database ls /app/config/scripts
 
-docker-compose exec chat-service sh -c "PYTHONPATH=/app python api/db/init_db.py"
+docker exec -it bookdrop-database \
+  psql -U bookdrop -d bookdrop -f /app/config/scripts/init_db.sql
+
+docker exec -it bookdrop-database \
+  psql -U bookdrop -d bookdrop -f /app/config/scripts/verify_db.sql
+
+docker exec -it bookdrop-backend \
+  sh -c "PYTHONPATH=/app python core/verify_models.py"
