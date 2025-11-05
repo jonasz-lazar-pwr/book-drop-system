@@ -1,3 +1,3 @@
 window.__env = {
-  apiUrl: '$API_URL',
+  API_URL: "${API_URL}"
 };

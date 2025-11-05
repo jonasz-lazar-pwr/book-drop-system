@@ -1,11 +1,11 @@
 export interface RuntimeEnv {
-  apiUrl: string;
+  API_URL: string;
   [key: string]: unknown;
 }
 
 const globalWindow = window as unknown as Record<string, unknown>;
 const defaultEnv: RuntimeEnv = {
-  apiUrl: 'http://localhost:8000',
+  API_URL: 'http://localhost:8000',
 };
 
 export const runtimeEnv: RuntimeEnv = {

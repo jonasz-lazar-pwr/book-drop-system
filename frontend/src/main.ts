@@ -1,25 +1,19 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
-import { provideRouter } from '@angular/router';
-import { AppComponent } from './app/app.component';
-import { routes } from './app/app.routes';
+import { appConfig } from './app/app.config';
+import { App } from './app/app';
 
 fetch('/assets/config/app.config.js')
-  .then((resp) => {
+  .then(async (resp) => {
     if (!resp.ok) throw new Error('Failed to load runtime config');
-    return resp.text();
-  })
-  .then((jsContent) => {
+
+    const jsContent = await resp.text();
     const script = document.createElement('script');
     script.textContent = jsContent;
     document.head.appendChild(script);
 
-    return bootstrapApplication(AppComponent, {
-      providers: [provideHttpClient(withInterceptorsFromDi()), provideRouter(routes)],
-    });
+    await bootstrapApplication(App, appConfig);
   })
-  .catch(() => {
-    bootstrapApplication(AppComponent, {
-      providers: [provideHttpClient(withInterceptorsFromDi()), provideRouter(routes)],
-    });
+  .catch(async (err) => {
+    console.warn('Runtime config not found — using defaults.', err);
+    await bootstrapApplication(App, appConfig);
   });

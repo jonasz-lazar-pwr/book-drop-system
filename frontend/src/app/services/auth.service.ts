@@ -1,72 +1,52 @@
 import { inject, Injectable } from '@angular/core';
-import { catchError, Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
-// import { runtimeEnv } from '@environments/runtime-env';
+import { runtimeEnv } from '@runtime/runtime-env';
+import { AccessToken, LoginPayload, RegisterPayload, TokenPair, UserInfo } from '@models/auth';
+import { StorageService } from '@services/storage.service';
+import { tap, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
+  private readonly api = `${runtimeEnv.API_URL}/auth`;
+
   private http = inject(HttpClient);
+  private storage = inject(StorageService);
 
-  constructor() {}
-
-  // Decodes the ID token and extracts the user's "sub" (unique identifier)
-  // getUserSub(): string | null {
-  //   const idToken = this.getIdToken();
-  //   if (!idToken) return null;
-  //
-  //   try {
-  //   } catch (e) {}
-  // }
-
-  // Returns true if the user is authenticated (based on presence of id_token)
-  isAuthenticated(): boolean {
-    return !!this.getTokenFromSessionStorage('id_token');
+  register(data: RegisterPayload) {
+    return this.http.post<TokenPair>(`${this.api}/register`, data)
+      .pipe(tap(tokens => this.saveTokens(tokens)));
   }
 
-  // Retrieves the ID token from sessionStorage
-  getIdToken(): string | null {
-    return this.getTokenFromSessionStorage('id_token');
+  login(data: LoginPayload) {
+    return this.http.post<TokenPair>(`${this.api}/login`, data)
+      .pipe(tap(tokens => this.saveTokens(tokens)));
   }
 
-  // Reads either id_token or access_token from OIDC sessionStorage entry
-  private getTokenFromSessionStorage(tokenType: 'id_token' | 'access_token'): string | null {
-    const storageKeys = Object.keys(sessionStorage);
-    const oidcKey = storageKeys.find((key) => key.startsWith('0-'));
+  refresh() {
+    const token = this.storage.getRefreshToken();
+    if (!token) return throwError(() => new Error('Missing refresh token'));
 
-    if (!oidcKey) return null;
-
-    try {
-      const storedData = JSON.parse(sessionStorage.getItem(oidcKey) || '{}');
-      return storedData.authnResult?.[tokenType] || null;
-    } catch (error) {
-      console.error(`Error parsing sessionStorage data for ${tokenType}:`, error);
-      return null;
-    }
+    return this.http.post<AccessToken>(`${this.api}/refresh`, { refresh_token: token })
+      .pipe(tap(res => this.storage.setAccessToken(res.access_token)));
   }
 
-  // Sends a POST request to backend to register a user (only called once after login)
-  registerUser(): Observable<boolean> {
-    return this.http.post('api/users/register', null).pipe(
-      map(() => true),
-      catchError((error) => {
-        console.error('User registration failed:', error);
-        return of(false);
-      }),
-    );
+  logout() {
+    this.storage.clear();
+    return this.http.post(`${this.api}/logout`, {}).pipe(tap(() => this.storage.clear()));
   }
 
-  // Starts the OIDC login redirect flow
-  login(): void {}
+  getCurrentUser() {
+    return this.http.get<UserInfo>(`${this.api}/me`);
+  }
 
-  // Clears sessionStorage, log out and redirects
-  logout(): void {
-    if (window.sessionStorage) {
-      window.sessionStorage.clear();
-    }
+  private saveTokens(tokens: TokenPair) {
+    this.storage.setAccessToken(tokens.access_token);
+    this.storage.setRefreshToken(tokens.refresh_token);
+  }
 
-    // Redirect after logout
+  isLoggedIn(): boolean {
+    return this.storage.isAuthenticated();
   }
 }

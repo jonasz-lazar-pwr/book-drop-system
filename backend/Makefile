@@ -10,7 +10,7 @@ lint:
 
 # Run tests with coverage
 test:
-	pytest --cov=api --cov=core --cov=models --cov=schemas --cov=services --cov-report=term-missing
+	@bash -c 'export $$(grep -vE "^(#|$$)" .env.test | xargs) && pytest --cov=api --cov=core --cov=models --cov=schemas --cov=services --cov-report=term-missing'
 
 # Run everything (lint + tests)
 check: format lint test

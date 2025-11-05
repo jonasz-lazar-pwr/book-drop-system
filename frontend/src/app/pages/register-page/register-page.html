@@ -1,0 +1,29 @@
+<div class="min-h-screen flex items-center justify-center bg-gray-50">
+  <form class="bg-white p-8 rounded-xl shadow-md w-96 space-y-4" (ngSubmit)="onSubmit()">
+    <h2 class="text-2xl font-semibold text-center mb-4">Rejestracja</h2>
+
+    <input [(ngModel)]="first_name" name="first_name" placeholder="Imię"
+           class="w-full border p-3 rounded focus:outline-blue-500"
+           autocomplete="given-name" required />
+
+    <input [(ngModel)]="last_name" name="last_name" placeholder="Nazwisko"
+           class="w-full border p-3 rounded focus:outline-blue-500"
+           autocomplete="family-name" required />
+
+    <input [(ngModel)]="email" name="email" type="email" placeholder="Email"
+           class="w-full border p-3 rounded focus:outline-blue-500"
+           autocomplete="email" required />
+
+    <input [(ngModel)]="password" name="password" type="password" placeholder="Hasło"
+           class="w-full border p-3 rounded focus:outline-blue-500"
+           autocomplete="new-password" required />
+
+    <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700">
+      Utwórz konto
+    </button>
+
+    <p class="text-center text-sm text-gray-600">
+      Masz już konto? <a routerLink="/login" class="text-blue-600 hover:underline">Zaloguj się</a>
+    </p>
+  </form>
+</div>
