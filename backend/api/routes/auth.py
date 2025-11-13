@@ -43,17 +43,11 @@ router = APIRouter(tags=["Auth"])
     "/register",
     response_model=TokenPair,
     status_code=201,
-    summary="Register a new user",
-    description="""
-Create a new **reader** account in the BookDrop system.
-
-The endpoint:
-- Normalizes and lowercases the provided email.
-- Hashes the password using Argon2.
-- Returns a pair of JWT tokens (`access_token` and `refresh_token`).
-
-**Default role:** `reader`
-""",
+    summary="Register new user",
+    description=(
+        "Creates a new **reader** account. "
+        "Normalizes email, hashes password with Argon2, and returns access and refresh tokens."
+    ),
     responses={
         201: {"description": "User registered successfully."},
         400: {"description": "Email already registered."},
@@ -90,21 +84,19 @@ async def register_user(payload: RegisterRequest, db: AsyncSession = Depends(get
     }
 
     return TokenPair(
-        access_token=create_access_token(data), refresh_token=create_refresh_token(data)
+        access_token=create_access_token(data),
+        refresh_token=create_refresh_token(data),
     )
 
 
 @router.post(
     "/login",
     response_model=TokenPair,
-    summary="Log in with email and password",
-    description="""
-Authenticate a user using email and password.
-
-If successful, returns a new pair of tokens:
-- `access_token` — short-lived token for API access.
-- `refresh_token` — long-lived token for obtaining new access tokens.
-""",
+    summary="Log in",
+    description=(
+        "Authenticates a user with email and password. "
+        "Returns a new pair of access and refresh tokens."
+    ),
     responses={
         200: {"description": "Login successful."},
         401: {"description": "Invalid email or password."},
@@ -126,7 +118,8 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     }
 
     return TokenPair(
-        access_token=create_access_token(data), refresh_token=create_refresh_token(data)
+        access_token=create_access_token(data),
+        refresh_token=create_refresh_token(data),
     )
 
 
@@ -134,11 +127,10 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     "/refresh",
     response_model=AccessToken,
     summary="Refresh access token",
-    description="""
-Exchange a valid **refresh token** for a new **access token**.
-
-Use this endpoint when the access token expires but the refresh token is still valid.
-""",
+    description=(
+        "Exchanges a valid **refresh token** for a new **access token**. "
+        "Used when the current access token has expired."
+    ),
     responses={
         200: {"description": "Access token refreshed successfully."},
         401: {"description": "Invalid or expired refresh token."},
@@ -166,19 +158,18 @@ async def refresh_token(payload: RefreshRequest):
 @router.get(
     "/me",
     response_model=UserInfo,
-    summary="Get current user info",
-    description="""
-Retrieve details of the currently authenticated user.
-
-Requires a valid **Bearer access token** in the `Authorization` header.
-""",
+    summary="Get current user",
+    description=(
+        "Returns details of the currently authenticated user. "
+        "Requires a valid **Bearer access token** in the `Authorization` header."
+    ),
     responses={
         200: {"description": "User information returned successfully."},
         401: {"description": "Missing or invalid access token."},
     },
 )
 async def get_me(current_user: User = Depends(get_current_user)):
-    """Return information about the currently logged-in user."""
+    """Return information about the current user."""
     return UserInfo(
         id=UUID(str(current_user.id)),
         email=current_user.email,
@@ -190,15 +181,13 @@ async def get_me(current_user: User = Depends(get_current_user)):
 
 @router.post(
     "/logout",
-    summary="Log out (stateless)",
-    description="""
-Perform a stateless logout.
-
-BookDrop does not maintain server-side sessions.
-Clients must remove JWT tokens locally (from browser storage, mobile app, etc.).
-""",
+    summary="Log out",
+    description=(
+        "Performs a stateless logout. "
+        "BookDrop does not maintain server-side sessions; clients must remove tokens locally."
+    ),
     responses={200: {"description": "Logout acknowledged by the server."}},
 )
 async def logout():
-    """Perform stateless logout — client must delete tokens locally."""
+    """Acknowledge logout and invalidate local tokens client-side."""
     return {"detail": "Logout successful. Tokens must be deleted client-side."}

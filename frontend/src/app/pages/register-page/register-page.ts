@@ -5,7 +5,6 @@ import { AuthService } from '@services/auth.service';
 
 @Component({
   selector: 'app-register-page',
-  standalone: true,
   imports: [FormsModule, RouterLink],
   templateUrl: './register-page.html',
   styleUrl: './register-page.scss',
@@ -15,11 +14,14 @@ export class RegisterPage {
   password = '';
   first_name = '';
   last_name = '';
+  errorMessage = '';
 
-  readonly auth = inject(AuthService);
-  readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
-  onSubmit() {
+  onSubmit(): void {
+    this.errorMessage = '';
+
     this.auth
       .register({
         email: this.email,
@@ -29,17 +31,20 @@ export class RegisterPage {
       })
       .subscribe({
         next: () => {
-          setTimeout(() => {
-            this.auth.getCurrentUser().subscribe({
-              next: (user) => {
-                console.log('Zarejestrowano jako:', user.email, 'rola:', user.role);
-                this.router.navigate(['/dashboard']);
-              },
-              error: () => alert('Nie udało się pobrać danych użytkownika po rejestracji.'),
-            });
-          }, 50);
+          this.auth.getCurrentUser().subscribe({
+            next: (user) => {
+              const target = this.auth.getRedirectPathForRole(user.role);
+              this.router.navigate([target]);
+            },
+            error: () => {
+              this.errorMessage = 'Nie udało się pobrać danych użytkownika.';
+            },
+          });
         },
-        error: () => alert('Nie udało się zarejestrować — sprawdź dane i spróbuj ponownie.'),
+        error: () => {
+          this.errorMessage =
+            'Rejestracja nie powiodła się. Sprawdź dane i spróbuj ponownie.';
+        },
       });
   }
 }

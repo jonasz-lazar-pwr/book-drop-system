@@ -5,7 +5,6 @@ import { AuthService } from '@services/auth.service';
 
 @Component({
   selector: 'app-login-page',
-  standalone: true,
   imports: [FormsModule, RouterLink],
   templateUrl: './login-page.html',
   styleUrl: './login-page.scss',
@@ -13,27 +12,28 @@ import { AuthService } from '@services/auth.service';
 export class LoginPage {
   email = '';
   password = '';
+  errorMessage = '';
 
-  readonly auth = inject(AuthService);
-  readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
-  onSubmit() {
+  onSubmit(): void {
+    this.errorMessage = '';
+
     this.auth.login({ email: this.email, password: this.password }).subscribe({
       next: () => {
-        setTimeout(() => {
-          this.auth.getCurrentUser().subscribe({
-            next: (user) => {
-              console.log('Zalogowano jako:', user.email, 'rola:', user.role);
-              this.router.navigate(['/dashboard']);
-            },
-            error: () => {
-              alert('Nie udało się pobrać danych użytkownika.');
-            },
-          });
-        }, 50);
+        this.auth.getCurrentUser().subscribe({
+          next: (user) => {
+            const target = this.auth.getRedirectPathForRole(user.role);
+            this.router.navigate([target]);
+          },
+          error: () => {
+            this.errorMessage = 'Nie udało się pobrać danych użytkownika.';
+          },
+        });
       },
       error: () => {
-        alert('Błędny email lub hasło');
+        this.errorMessage = 'Nieprawidłowy adres e-mail lub hasło.';
       },
     });
   }

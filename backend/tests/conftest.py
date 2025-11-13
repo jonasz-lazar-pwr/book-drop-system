@@ -106,7 +106,16 @@ async def client(db_session):
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def clear_users_table(db_session):
-    """Truncate the user table after each test to prevent duplicates."""
-    await db_session.execute(text('TRUNCATE TABLE "user" RESTART IDENTITY CASCADE;'))
+async def clear_test_data(db_session):
+    """Truncate main data tables before each test to ensure full isolation."""
+    truncate_sql = """
+    TRUNCATE TABLE
+        "user",
+        book_item,
+        book,
+        cart_item,
+        cart
+    RESTART IDENTITY CASCADE;
+    """
+    await db_session.execute(text(truncate_sql))
     await db_session.commit()

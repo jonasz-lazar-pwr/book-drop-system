@@ -19,6 +19,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
   const apiUrl = runtimeEnv.API_URL ?? '';
   const isAuthRequest = req.url.startsWith(`${apiUrl}/auth/`);
 
+  // Attach access token to authorized requests
   const token = storage.getAccessToken();
   if (token) {
     req = req.clone({
@@ -28,14 +29,17 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
+      // Handle 401 by trying to refresh the token
       if (error.status === 401 && !isAuthRequest) {
         const refreshToken = storage.getRefreshToken();
+
         if (!refreshToken) {
           storage.clear();
           router.navigate(['/']);
           return throwError(() => error);
         }
 
+        // Attempt token refresh
         return auth.refresh().pipe(
           switchMap(() => {
             const newToken = storage.getAccessToken();

@@ -6,6 +6,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application configuration loaded from environment variables."""
 
+    GOOGLE_BOOKS_API_KEY: str
+
     DB_HOST: str
     DB_NAME: str
     DB_USER: str

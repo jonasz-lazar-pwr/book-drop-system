@@ -3,17 +3,15 @@ import { interval, Subscription, switchMap, of } from 'rxjs';
 import { AuthService } from '@services/auth.service';
 import { StorageService } from '@services/storage.service';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class TokenMonitorService implements OnDestroy {
   private readonly checkIntervalMs = 60_000;
   private readonly refreshThresholdMs = 60_000;
   private intervalSub?: Subscription;
   private isRefreshing = false;
 
-  private auth = inject(AuthService);
-  private storage = inject(StorageService);
+  private readonly auth = inject(AuthService);
+  private readonly storage = inject(StorageService);
 
   constructor() {
     this.intervalSub = interval(this.checkIntervalMs)
@@ -26,7 +24,7 @@ export class TokenMonitorService implements OnDestroy {
     if (!accessToken || this.isRefreshing) return of(null);
 
     const payload = this.decodeJwt(accessToken);
-    const exp = (payload && typeof payload['exp'] === 'number') ? payload['exp'] : null;
+    const exp = typeof payload?.['exp'] === 'number' ? payload['exp'] : null;
     if (!exp) return of(null);
 
     const expiresAt = exp * 1000;
@@ -38,7 +36,7 @@ export class TokenMonitorService implements OnDestroy {
         switchMap(() => {
           this.isRefreshing = false;
           return of(true);
-        }),
+        })
       );
     }
 

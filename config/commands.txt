@@ -11,3 +11,5 @@ docker exec -it bookdrop-database \
 
 docker exec -it bookdrop-backend \
   sh -c "PYTHONPATH=/app python core/verify_models.py"
+
+curl -X POST http://localhost:8000/api/seed/run

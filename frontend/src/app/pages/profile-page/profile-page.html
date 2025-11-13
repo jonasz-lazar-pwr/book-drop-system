@@ -1,0 +1,16 @@
+<app-navbar></app-navbar>
+
+<div class="p-8 max-w-3xl mx-auto">
+  <h1 class="text-3xl font-bold text-[#004E89] mb-6">Moje konto</h1>
+
+  @if (user$ | async; as user) {
+    <div class="bg-white shadow rounded-xl p-6 space-y-3 border border-gray-200">
+      <p><span class="font-semibold text-gray-700">Imię:</span> {{ user.first_name }}</p>
+      <p><span class="font-semibold text-gray-700">Nazwisko:</span> {{ user.last_name }}</p>
+      <p><span class="font-semibold text-gray-700">Email:</span> {{ user.email }}</p>
+      <p><span class="font-semibold text-gray-700">Rola:</span> {{ user.role }}</p>
+    </div>
+  } @else {
+    <p class="text-gray-600">Ładowanie danych użytkownika...</p>
+  }
+</div>

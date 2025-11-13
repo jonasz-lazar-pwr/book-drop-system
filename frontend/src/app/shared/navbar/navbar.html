@@ -1,0 +1,113 @@
+<nav class="sticky top-0 z-50 bg-[#004E89] text-white shadow-md select-none">
+  <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
+    <div class="flex items-center space-x-3 cursor-pointer select-none" routerLink="/catalog">
+      <span class="text-2xl font-bold tracking-wide">BookDrop</span>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-8 w-8">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987
+          0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0
+          0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987
+          0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+      </svg>
+    </div>
+
+    <div class="hidden lg:flex items-center space-x-10">
+      @for (item of menuItems; track item.path) {
+        <a [routerLink]="item.path" routerLinkActive="active-link" class="nav-link font-medium transition-all relative">
+          {{ item.label }}
+          <span class="absolute left-0 -bottom-1 h-0.5 bg-[#FFB703] w-0 transition-all duration-300"></span>
+        </a>
+      }
+    </div>
+
+    <div class="hidden lg:flex items-center space-x-6 relative">
+      @if (user?.role === 'reader') {
+        <button routerLink="/cart" title="Koszyk" class="hover:text-[#FFB703] transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+               stroke-width="1.5" stroke="currentColor" class="h-7 w-7">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5
+              14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218
+              c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114
+              0 0 0-16.536-1.84M7.5 14.25 5.106
+              5.272M6 20.25a.75.75 0 1 1-1.5
+              0 .75.75 0 0 1 1.5 0Zm12.75
+              0a.75.75 0 1 1-1.5 0 .75.75
+              0 0 1 1.5 0Z" />
+          </svg>
+        </button>
+      }
+
+      <div class="relative profile-menu" (mouseenter)="showMenu = true" (mouseleave)="showMenu = false">
+        <button class="flex items-center space-x-2 font-medium hover:text-[#FFB703] transition-colors">
+          @if (user) {
+            <span>{{ user.first_name }} {{ user.last_name }}</span>
+          }
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+               stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+
+        @if (showMenu) {
+          <div class="absolute right-0 top-full translate-y-1 w-40 rounded-lg bg-white text-gray-700 shadow-lg border border-gray-200 animate-fade-in">
+            <a routerLink="/profile" class="block px-4 py-2 hover:bg-gray-100 transition-colors">
+              Moje konto
+            </a>
+            <button (click)="logout()" class="w-full text-left px-4 py-2 text-[#D62839] hover:bg-gray-100 transition-colors">
+              Wyloguj się
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="flex lg:hidden items-center space-x-5">
+      @if (user?.role === 'reader') {
+        <button routerLink="/cart" title="Koszyk" class="hover:text-[#FFB703] transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+               stroke-width="1.5" stroke="currentColor" class="h-7 w-7">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M2.25 3h1.386c.51 0 .955.343
+              1.087.835l.383 1.437M7.5 14.25a3
+              3 0 0 0-3 3h15.75m-12.75-3h11.218
+              c1.121-2.3 2.1-4.684 2.924-7.138a60.114
+              60.114 0 0 0-16.536-1.84M7.5 14.25
+              5.106 5.272M6 20.25a.75.75 0 1 1-1.5
+              0 .75.75 0 0 1 1.5 0Zm12.75
+              0a.75.75 0 1 1-1.5 0 .75.75
+              0 0 1 1.5 0Z" />
+          </svg>
+        </button>
+      }
+
+      <button class="focus:outline-none hover:text-[#FFB703] transition-colors relative w-8 h-8"
+              (click)="toggleMobileMenu()" aria-label="Toggle menu">
+        <span class="absolute top-1/2 left-1/2 block h-0.5 w-6 bg-white transform transition-all duration-300"
+              [class.rotate-45]="showMobileMenu" [class.translate-y-0]="showMobileMenu"
+              [class.-translate-y-2]="!showMobileMenu"></span>
+        <span class="absolute top-1/2 left-1/2 block h-0.5 w-6 bg-white transform transition-all duration-300"
+              [class.opacity-0]="showMobileMenu" [class.opacity-100]="!showMobileMenu"></span>
+        <span class="absolute top-1/2 left-1/2 block h-0.5 w-6 bg-white transform transition-all duration-300"
+              [class.-rotate-45]="showMobileMenu" [class.translate-y-0]="showMobileMenu"
+              [class.translate-y-2]="!showMobileMenu"></span>
+      </button>
+    </div>
+  </div>
+
+  @if (showMobileMenu) {
+    <div class="lg:hidden bg-[#004E89] border-t border-[#0074D9] animate-slide-down">
+      @for (item of menuItems; track item.path) {
+        <a [routerLink]="item.path" class="block px-6 py-3 text-white hover:bg-[#0074D9] transition-colors" (click)="toggleMobileMenu()">
+          {{ item.label }}
+        </a>
+      }
+      <a routerLink="/profile" class="block px-6 py-3 text-white hover:bg-[#0074D9] transition-colors" (click)="toggleMobileMenu()">
+        Moje konto
+      </a>
+      <button (click)="logout(); toggleMobileMenu()" class="block w-full text-left px-6 py-3 text-[#FFB703] hover:bg-[#0074D9] transition-colors">
+        Wyloguj się
+      </button>
+    </div>
+  }
+</nav>

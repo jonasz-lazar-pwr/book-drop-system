@@ -1,21 +1,50 @@
-<div class="min-h-screen flex items-center justify-center bg-gray-50">
-  <form class="bg-white p-8 rounded-xl shadow-md w-96 space-y-4" (ngSubmit)="onSubmit()">
-    <h2 class="text-2xl font-semibold text-center mb-4">Logowanie</h2>
+<div class="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
+  <form
+    class="bg-white p-8 rounded-xl shadow-md w-96 space-y-4"
+    (ngSubmit)="onSubmit()"
+  >
+    <h2 class="text-2xl font-semibold text-center mb-4 text-[#004E89]">
+      Logowanie
+    </h2>
 
-    <input [(ngModel)]="email" name="email" type="email" placeholder="Email"
-           class="w-full border p-3 rounded focus:outline-blue-500"
-           autocomplete="email" required />
+    <input
+      [(ngModel)]="email"
+      name="email"
+      type="email"
+      placeholder="Email"
+      class="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-[#0074D9]"
+      autocomplete="email"
+      required
+    />
 
-    <input [(ngModel)]="password" name="password" type="password" placeholder="Hasło"
-           class="w-full border p-3 rounded focus:outline-blue-500"
-           autocomplete="current-password" required />
+    <input
+      [(ngModel)]="password"
+      name="password"
+      type="password"
+      placeholder="Hasło"
+      class="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-[#0074D9]"
+      autocomplete="current-password"
+      required
+    />
 
-    <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700">
+    <button
+      type="submit"
+      class="w-full bg-[#004E89] text-white p-3 rounded font-medium hover:bg-[#0074D9] transition-all duration-200"
+    >
       Zaloguj się
     </button>
 
-    <p class="text-center text-sm text-gray-600">
-      Nie masz konta? <a routerLink="/register" class="text-blue-600 hover:underline">Zarejestruj się</a>
+    @if (errorMessage) {
+      <p class="text-[#D62839] text-sm text-center mt-2">
+        {{ errorMessage }}
+      </p>
+    }
+
+    <p class="text-center text-sm text-gray-600 mt-4">
+      Nie masz konta?
+      <a routerLink="/register" class="text-[#004E89] hover:underline">
+        Zarejestruj się
+      </a>
     </p>
   </form>
 </div>

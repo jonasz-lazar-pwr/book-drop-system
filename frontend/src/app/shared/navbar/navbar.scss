@@ -1,0 +1,55 @@
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.15s ease-out forwards;
+}
+
+.animate-slide-down {
+  animation: slide-down 0.25s ease-out forwards;
+}
+
+.nav-link {
+  position: relative;
+  color: #ffffff;
+}
+
+.nav-link:hover {
+  color: #ffb703;
+}
+
+.nav-link:hover span {
+  width: 100%;
+}
+
+.active-link {
+  color: #ffb703 !important;
+}
+
+.profile-menu:hover div {
+  display: block !important;
+}
+
+.profile-menu div {
+  display: none;
+  animation: fade-in 0.15s ease-out forwards;
+}

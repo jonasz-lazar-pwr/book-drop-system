@@ -1,8 +1,41 @@
-<div class="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-  <h1 class="text-4xl font-bold text-blue-700 mb-6">📚 BookDrop</h1>
-  <p class="text-gray-600 mb-8">Witaj w systemie zarządzania biblioteką.</p>
-  <div class="space-x-4">
-    <a routerLink="/login" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Zaloguj się</a>
-    <a routerLink="/register" class="px-6 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50">Zarejestruj się</a>
+<div class="min-h-screen flex flex-col items-center justify-center bg-[#F5F5F5] text-[#222222] px-6">
+  <div class="flex items-center space-x-3 mb-6">
+    <h1 class="text-5xl font-bold text-[#004E89] tracking-wide">BookDrop</h1>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke-width="2"
+      stroke="#004E89"
+      class="w-12 h-12"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18
+           c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25
+           A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"
+      />
+    </svg>
+  </div>
+
+  <p class="text-lg text-[#555555] mb-10 text-center max-w-md">
+    Nowoczesny system zarządzania biblioteką.<br />
+    Wypożyczaj, odbieraj i zwracaj książki bez kolejek.
+  </p>
+
+  <div class="flex flex-col sm:flex-row items-center gap-4">
+    <a
+      routerLink="/login"
+      class="px-8 py-3 bg-[#004E89] text-white rounded-lg font-medium shadow-md hover:bg-[#0074D9] transition-all duration-200"
+    >
+      Zaloguj się
+    </a>
+    <a
+      routerLink="/register"
+      class="px-8 py-3 border-2 border-[#004E89] text-[#004E89] rounded-lg font-medium hover:bg-[#E0E0E0] transition-all duration-200"
+    >
+      Zarejestruj się
+    </a>
   </div>
 </div>
