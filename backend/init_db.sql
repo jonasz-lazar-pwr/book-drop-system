@@ -16,9 +16,23 @@ DROP TABLE IF EXISTS "user" CASCADE;
 DROP TYPE IF EXISTS user_role, order_status, shipment_mode, shipment_status, cart_status, book_location CASCADE;
 
 CREATE TYPE user_role AS ENUM ('reader', 'librarian', 'courier');
-CREATE TYPE order_status AS ENUM ('new', 'prepared', 'in_transit', 'ready_for_pickup', 'picked_up', 'return_in_progress', 'returned', 'canceled');
+COMMENT ON TYPE user_role IS 'User role in the system.';
+
+CREATE TYPE order_status AS ENUM (
+    'new', 'prepared', 'in_transit', 'ready_for_pickup',
+    'picked_up', 'return_in_progress', 'returned', 'canceled'
+);
+COMMENT ON TYPE order_status IS 'Lifecycle of an order.';
+
 CREATE TYPE shipment_mode AS ENUM ('delivery', 'return');
-CREATE TYPE shipment_status AS ENUM ('created', 'placed_in_locker', 'retrieved_by_user', 'collected_by_courier', 'completed');
+COMMENT ON TYPE shipment_mode IS 'Shipment direction: delivery or return.';
+
+CREATE TYPE shipment_status AS ENUM (
+    'created', 'placed_in_locker', 'retrieved_by_user',
+    'collected_by_courier', 'completed'
+);
+COMMENT ON TYPE shipment_status IS 'Stages of a shipment process.';
+
 CREATE TYPE cart_status AS ENUM ('active', 'submitted');
 CREATE TYPE book_location AS ENUM ('library', 'transit', 'locker', 'borrowed');
 
@@ -76,7 +90,7 @@ CREATE INDEX idx_book_item_location     ON book_item(current_location);
 
 CREATE TABLE cart (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL UNIQUE REFERENCES "user"(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
     status cart_status NOT NULL DEFAULT 'active',
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamptz DEFAULT CURRENT_TIMESTAMP
@@ -135,7 +149,7 @@ EXECUTE FUNCTION update_order_timestamp();
 CREATE TABLE order_item (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL REFERENCES "order"(id) ON DELETE CASCADE,
-    book_item_id UUID NOT NULL REFERENCES book_item(id),
+    book_item_id UUID REFERENCES book_item(id),
     due_date timestamptz,
     returned_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -202,12 +216,29 @@ EXECUTE FUNCTION generate_pickup_code();
 CREATE OR REPLACE FUNCTION sync_book_item_availability()
 RETURNS TRIGGER AS $$
 BEGIN
+  IF (TG_OP = 'INSERT' AND NEW.book_item_id IS NULL)
+     OR (TG_OP = 'UPDATE' AND NEW.book_item_id IS NULL)
+     OR (TG_OP = 'DELETE' AND OLD.book_item_id IS NULL) THEN
+    RETURN NEW;
+  END IF;
+
   IF TG_OP = 'INSERT' THEN
-    UPDATE book_item SET is_available = FALSE, current_location = 'borrowed' WHERE id = NEW.book_item_id;
+    UPDATE book_item
+    SET is_available = FALSE,
+        current_location = 'borrowed'
+    WHERE id = NEW.book_item_id;
+
   ELSIF TG_OP = 'UPDATE' AND NEW.returned_at IS NOT NULL THEN
-    UPDATE book_item SET is_available = TRUE, current_location = 'library' WHERE id = NEW.book_item_id;
+    UPDATE book_item
+    SET is_available = TRUE,
+        current_location = 'library'
+    WHERE id = NEW.book_item_id;
+
   ELSIF TG_OP = 'DELETE' THEN
-    UPDATE book_item SET is_available = TRUE, current_location = 'library' WHERE id = OLD.book_item_id;
+    UPDATE book_item
+    SET is_available = TRUE,
+        current_location = 'library'
+    WHERE id = OLD.book_item_id;
   END IF;
   RETURN NEW;
 END;
@@ -221,6 +252,9 @@ EXECUTE FUNCTION sync_book_item_availability();
 CREATE OR REPLACE FUNCTION auto_close_old_carts()
 RETURNS void AS $$
 BEGIN
-  UPDATE cart SET status = 'submitted' WHERE status = 'active' AND created_at < NOW() - INTERVAL '30 days';
+  UPDATE cart
+  SET status = 'submitted'
+  WHERE status = 'active'
+    AND created_at < NOW() - INTERVAL '30 days';
 END;
 $$ LANGUAGE plpgsql;

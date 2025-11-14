@@ -32,8 +32,7 @@ class Cart(Base):
     user_id: Mapped[str] = mapped_column(
         ForeignKey("user.id", ondelete="CASCADE"),
         nullable=False,
-        unique=True,
-        comment="User who owns this cart.",
+        comment="User who owns this cart. Multiple carts allowed; only one ACTIVE at a time.",
     )
 
     status: Mapped[CartStatus] = mapped_column(
@@ -64,5 +63,4 @@ class Cart(Base):
     __table_args__ = (Index("idx_cart_user_id", "user_id"),)
 
     def __repr__(self) -> str:
-        """Return a readable string representation of the cart."""
         return f"<Cart(id={self.id}, user_id={self.user_id}, status='{self.status.value}')>"

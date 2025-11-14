@@ -1,0 +1,41 @@
+<div class="relative w-full mb-5">
+  <input
+    type="text"
+    [formControl]="searchControl"
+    placeholder="Wpisz miasto lub kod pocztowy..."
+    class="flex-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#004E89] outline-none"
+    (keyup.enter)="lockerSearch.emit(searchControl.value?.trim() || '')"
+  />
+
+  @if (loading) {
+    <div class="absolute right-3 top-2.5">
+      <div
+        class="h-4 w-4 border-2 border-blue-200 border-t-[#004E89] rounded-full animate-spin"
+      ></div>
+    </div>
+  }
+
+  @if (suggestions.length > 0) {
+    <ul
+      class="absolute z-[9999] bg-white border border-gray-200 rounded-lg mt-1 w-full shadow-lg max-h-60 overflow-y-auto"
+      role="listbox"
+    >
+      @for (s of suggestions; track s.id) {
+        <li
+          tabindex="0"
+          role="option"
+          aria-selected="false"
+          class="px-4 py-2 hover:bg-blue-50 cursor-pointer transition focus:outline-none focus:ring-2 focus:ring-[#004E89]"
+          (click)="selectSuggestion(s, $event)"
+          (keydown.enter)="selectSuggestion(s, $event)"
+          (keydown.space)="selectSuggestion(s, $event)"
+        >
+          <p class="font-medium text-[#004E89]">
+            {{ s.city }} ({{ s.postal_code }})
+          </p>
+          <p class="text-xs text-gray-500">{{ s.street }}</p>
+        </li>
+      }
+    </ul>
+  }
+</div>

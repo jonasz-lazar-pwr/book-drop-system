@@ -1,17 +1,19 @@
-import { Component, HostListener, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnInit, inject, computed } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '@services/auth.service';
+import { CartService } from '@services/cart.service';
 import { UserInfo } from '@models/auth';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
   imports: [RouterLink, RouterLinkActive],
-  templateUrl: './navbar.html',
-  styleUrl: './navbar.scss',
+  templateUrl: './navbar.component.html',
+  styleUrl: './navbar.component.scss',
 })
-export class Navbar implements OnInit {
+export class NavbarComponent implements OnInit {
   private readonly auth = inject(AuthService);
+  private readonly cart = inject(CartService);
   private readonly router = inject(Router);
 
   user?: UserInfo;
@@ -19,11 +21,17 @@ export class Navbar implements OnInit {
   showMobileMenu = false;
   menuItems: { label: string; path: string }[] = [];
 
+  // Reactive badge
+  cartCount = computed(() => this.cart.cartCount());
+
   ngOnInit(): void {
     this.auth.getCurrentUser().subscribe({
       next: (u) => {
         this.user = u;
         this.setupMenu(u.role);
+        if (u.role === 'reader') {
+          this.cart.getCart().subscribe();
+        }
       },
       error: () => (this.user = undefined),
     });
@@ -38,7 +46,6 @@ export class Navbar implements OnInit {
           { label: 'Książkomaty', path: '/lockers' },
         ];
         break;
-
       case 'librarian':
         this.menuItems = [
           { label: 'Katalog', path: '/catalog' },
@@ -46,7 +53,6 @@ export class Navbar implements OnInit {
           { label: 'Zwroty', path: '/returns' },
         ];
         break;
-
       case 'courier':
         this.menuItems = [{ label: 'Dostawy', path: '/deliveries' }];
         break;

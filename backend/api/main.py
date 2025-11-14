@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from api.routes import auth, catalog, seed
+from api.routes import auth, cart, catalog, checkout, seed
 from core.middleware import add_middleware
 
 # Configure basic logging
@@ -50,3 +50,5 @@ def health_check():
 app.include_router(auth.router, prefix="/auth")
 app.include_router(seed.router, prefix="/api/seed")
 app.include_router(catalog.router, prefix="/api/catalog")
+app.include_router(cart.router, prefix="/api/cart")
+app.include_router(checkout.router, prefix="/api/checkout")

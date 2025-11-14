@@ -1,0 +1,17 @@
+:host {
+  display: block;
+  position: relative;
+}
+
+ul {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+li {
+  transition: background 0.15s ease;
+}
+
+li:hover {
+  background-color: #eff6ff;
+}

@@ -125,12 +125,12 @@ CREATE INDEX idx_book_item_location     ON book_item(current_location);
 -- =====================================================
 CREATE TABLE cart (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL UNIQUE REFERENCES "user"(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
     status cart_status NOT NULL DEFAULT 'active',
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamptz DEFAULT CURRENT_TIMESTAMP
 );
-COMMENT ON TABLE cart IS 'Temporary cart before order submission.';
+COMMENT ON TABLE cart IS 'User shopping carts. Each user may have multiple carts (historical or active), but only one ACTIVE at a time.';
 
 CREATE INDEX idx_cart_user_id ON cart(user_id);
 
@@ -196,7 +196,7 @@ EXECUTE FUNCTION update_order_timestamp();
 CREATE TABLE order_item (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL REFERENCES "order"(id) ON DELETE CASCADE,
-    book_item_id UUID NOT NULL REFERENCES book_item(id),
+    book_item_id UUID REFERENCES book_item(id),
     due_date timestamptz,
     returned_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -278,22 +278,31 @@ EXECUTE FUNCTION generate_pickup_code();
 CREATE OR REPLACE FUNCTION sync_book_item_availability()
 RETURNS TRIGGER AS $$
 BEGIN
+  IF (TG_OP = 'INSERT' AND NEW.book_item_id IS NULL)
+     OR (TG_OP = 'UPDATE' AND NEW.book_item_id IS NULL)
+     OR (TG_OP = 'DELETE' AND OLD.book_item_id IS NULL) THEN
+    RETURN NEW;
+  END IF;
+
   IF TG_OP = 'INSERT' THEN
     UPDATE book_item
     SET is_available = FALSE,
         current_location = 'borrowed'
     WHERE id = NEW.book_item_id;
+
   ELSIF TG_OP = 'UPDATE' AND NEW.returned_at IS NOT NULL THEN
     UPDATE book_item
     SET is_available = TRUE,
         current_location = 'library'
     WHERE id = NEW.book_item_id;
+
   ELSIF TG_OP = 'DELETE' THEN
     UPDATE book_item
     SET is_available = TRUE,
         current_location = 'library'
     WHERE id = OLD.book_item_id;
   END IF;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

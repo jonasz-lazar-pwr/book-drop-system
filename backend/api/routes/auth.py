@@ -14,19 +14,16 @@ Endpoints:
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.deps import get_current_user, get_db
 from core.security import (
     create_access_token,
     create_refresh_token,
-    hash_password,
-    verify_password,
     verify_token,
 )
 from models import User
-from models.enums import UserRole
+from repositories.auth_repository import AuthRepository
 from schemas.auth import (
     AccessToken,
     LoginRequest,
@@ -39,41 +36,12 @@ from schemas.auth import (
 router = APIRouter(tags=["Auth"])
 
 
-@router.post(
-    "/register",
-    response_model=TokenPair,
-    status_code=201,
-    summary="Register new user",
-    description=(
-        "Creates a new **reader** account. "
-        "Normalizes email, hashes password with Argon2, and returns access and refresh tokens."
-    ),
-    responses={
-        201: {"description": "User registered successfully."},
-        400: {"description": "Email already registered."},
-        422: {"description": "Validation error in input data."},
-    },
-)
+@router.post("/register", response_model=TokenPair, status_code=201, summary="Register new user")
 async def register_user(payload: RegisterRequest, db: AsyncSession = Depends(get_db)):
     """Register a new user and return JWT tokens."""
-    existing = await db.execute(
-        select(User).where(User.email == str(payload.email).lower().strip())
+    user = await AuthRepository.register_user(
+        db, payload.email, payload.password, payload.first_name, payload.last_name
     )
-    if existing.scalar():
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    user = User(
-        email=str(payload.email).lower().strip(),
-        password=hash_password(payload.password),
-        first_name=payload.first_name.strip(),
-        last_name=payload.last_name.strip(),
-        role=UserRole.READER,
-    )
-
-    db.add(user)
-    await db.flush()
-    await db.refresh(user)
-    await db.commit()
 
     data = {
         "id": user.id,
@@ -89,25 +57,10 @@ async def register_user(payload: RegisterRequest, db: AsyncSession = Depends(get
     )
 
 
-@router.post(
-    "/login",
-    response_model=TokenPair,
-    summary="Log in",
-    description=(
-        "Authenticates a user with email and password. "
-        "Returns a new pair of access and refresh tokens."
-    ),
-    responses={
-        200: {"description": "Login successful."},
-        401: {"description": "Invalid email or password."},
-    },
-)
+@router.post("/login", response_model=TokenPair, summary="Log in")
 async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     """Authenticate user and return JWT tokens."""
-    result = await db.execute(select(User).where(User.email == str(payload.email).lower().strip()))
-    user = result.scalar_one_or_none()
-    if not user or not verify_password(payload.password, str(user.password)):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+    user = await AuthRepository.authenticate_user(db, payload.email, payload.password)
 
     data = {
         "id": user.id,
@@ -123,19 +76,7 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.post(
-    "/refresh",
-    response_model=AccessToken,
-    summary="Refresh access token",
-    description=(
-        "Exchanges a valid **refresh token** for a new **access token**. "
-        "Used when the current access token has expired."
-    ),
-    responses={
-        200: {"description": "Access token refreshed successfully."},
-        401: {"description": "Invalid or expired refresh token."},
-    },
-)
+@router.post("/refresh", response_model=AccessToken, summary="Refresh access token")
 async def refresh_token(payload: RefreshRequest):
     """Generate a new access token using a valid refresh token."""
     decoded = verify_token(payload.refresh_token)
@@ -155,19 +96,7 @@ async def refresh_token(payload: RefreshRequest):
     return AccessToken(access_token=access_token)
 
 
-@router.get(
-    "/me",
-    response_model=UserInfo,
-    summary="Get current user",
-    description=(
-        "Returns details of the currently authenticated user. "
-        "Requires a valid **Bearer access token** in the `Authorization` header."
-    ),
-    responses={
-        200: {"description": "User information returned successfully."},
-        401: {"description": "Missing or invalid access token."},
-    },
-)
+@router.get("/me", response_model=UserInfo, summary="Get current user")
 async def get_me(current_user: User = Depends(get_current_user)):
     """Return information about the current user."""
     return UserInfo(
@@ -179,15 +108,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
     )
 
 
-@router.post(
-    "/logout",
-    summary="Log out",
-    description=(
-        "Performs a stateless logout. "
-        "BookDrop does not maintain server-side sessions; clients must remove tokens locally."
-    ),
-    responses={200: {"description": "Logout acknowledged by the server."}},
-)
+@router.post("/logout", summary="Log out")
 async def logout():
     """Acknowledge logout and invalidate local tokens client-side."""
     return {"detail": "Logout successful. Tokens must be deleted client-side."}

@@ -1,5 +1,5 @@
 <div
-  class="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-300 flex items-end md:items-center justify-center"
+  class="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-300 flex items-end md:items-center justify-center cursor-pointer"
   (click)="closed.emit()"
   (keyup.enter)="closed.emit()"
   tabindex="0"
@@ -74,8 +74,9 @@
           <div class="flex items-center sm:justify-start mt-1">
             @if (book.available_count > 0) {
               <button
-                class="flex items-center gap-2 bg-[#004E89] hover:bg-[#0074D9] text-white px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+                class="flex items-center gap-2 bg-[#004E89] hover:bg-[#0074D9] text-white px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
                 (click)="addToCart()"
+                [disabled]="cartItems.has(book.isbn)"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                      viewBox="0 0 24 24" stroke-width="1.8"
@@ -84,7 +85,7 @@
                         d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0
                         9 9 0 0 1 18 0Z" />
                 </svg>
-                <span>Dodaj do koszyka</span>
+                <span>{{ cartItems.has(book.isbn) ? 'W koszyku' : 'Dodaj do koszyka' }}</span>
               </button>
             }
           </div>

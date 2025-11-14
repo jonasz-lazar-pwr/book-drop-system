@@ -2,19 +2,24 @@ import { Component, signal, inject, computed, HostListener } from '@angular/core
 import { DatePipe, NgOptimizedImage } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { catchError, finalize, of, Subject, debounceTime } from 'rxjs';
-import { Navbar } from '@shared/navbar/navbar';
+import { NavbarComponent } from '@shared/navbar/navbar.component';
 import { CatalogService } from '@services/catalog.service';
+import { CartService } from '@services/cart.service';
+import { ToastService } from '@services/toast.service';
 import { Book } from '@models/catalog';
 import { BookDetails } from '@pages/catalog-page/components/book-details/book-details';
 
 @Component({
   selector: 'app-catalog-page',
-  imports: [Navbar, DatePipe, NgOptimizedImage, FormsModule, BookDetails],
+  imports: [NavbarComponent, DatePipe, NgOptimizedImage, FormsModule, BookDetails],
   templateUrl: './catalog-page.html',
   styleUrl: './catalog-page.scss',
 })
 export class CatalogPage {
   private readonly catalog = inject(CatalogService);
+  private readonly cart = inject(CartService);
+  private readonly toast = inject(ToastService);
+
   private bookCache = new Map<string, Book>();
   private searchSubject = new Subject<string>();
 
@@ -29,14 +34,16 @@ export class CatalogPage {
   loading = signal(true);
   publishers = signal<string[]>([]);
   selectedBook = signal<Book | null>(null);
+  addingToCart = signal<string | null>(null);
+  cartItems = signal<Set<string>>(new Set());
 
   totalPages = computed(() => Math.ceil(this.total() / this.limit));
 
   constructor() {
     this.loadBooks();
     this.loadPublishers();
+    this.loadCartItems();
 
-    // Debounced search (500 ms)
     this.searchSubject.pipe(debounceTime(500)).subscribe((term) => {
       this.search.set(term);
       this.page.set(1);
@@ -44,7 +51,18 @@ export class CatalogPage {
     });
   }
 
-  // Load paginated book list
+  private loadCartItems() {
+    this.cart.getCart()
+      .pipe(catchError(() => of(null)))
+      .subscribe((res) => {
+        if (res?.items) {
+          const isbns = new Set(res.items.map((i) => i.isbn));
+          this.cartItems.set(isbns);
+        }
+      });
+  }
+
+  // --- Load paginated book list ---
   loadBooks() {
     this.loading.set(true);
     this.catalog
@@ -52,6 +70,7 @@ export class CatalogPage {
       .pipe(
         catchError((err) => {
           console.error('Error loading books:', err);
+          this.toast.show('Nie udało się wczytać katalogu.', 'error');
           return of({ items: [], total: 0 });
         }),
         finalize(() => this.loading.set(false)),
@@ -62,34 +81,35 @@ export class CatalogPage {
       });
   }
 
-  // Load available publishers
+  // --- Load available publishers ---
   loadPublishers() {
     this.catalog
       .getPublishers()
       .pipe(
         catchError((err) => {
           console.error('Error loading publishers:', err);
+          this.toast.show('Nie udało się wczytać wydawnictw.', 'error');
           return of([] as string[]);
         }),
       )
       .subscribe((pubs) => this.publishers.set(pubs));
   }
 
-  // Handle search input
+  // --- Handle search input ---
   onSearch(event: Event) {
     const target = event.target as HTMLInputElement | null;
     const term = target?.value?.trim() || '';
     this.searchSubject.next(term);
   }
 
-  // Handle sorting change
+  // --- Handle sorting change ---
   onSortChange(event: Event) {
     const target = event.target as HTMLSelectElement | null;
     this.sort.set(target?.value || '');
     this.loadBooks();
   }
 
-  // Apply filters from the filter panel
+  // --- Apply filters from panel ---
   toggleFilterPanel() {
     this.filterPanelOpen.update((v) => !v);
   }
@@ -107,7 +127,7 @@ export class CatalogPage {
     this.filterPanelOpen.set(false);
   }
 
-  // Pagination controls
+  // --- Pagination controls ---
   nextPage() {
     if (this.page() < this.totalPages()) {
       this.page.update((p) => p + 1);
@@ -122,7 +142,7 @@ export class CatalogPage {
     }
   }
 
-  // Format author names
+  // --- Format author names ---
   formatAuthors(authors: string): string {
     if (!authors) return '';
     const parts = authors.split(',').map((a) => a.trim());
@@ -130,7 +150,7 @@ export class CatalogPage {
     return `${parts.slice(0, 2).join(', ')} i inni`;
   }
 
-  // Open modal with book details
+  // --- Open modal with book details ---
   openBookDetails(book: Book) {
     const cached = this.bookCache.get(book.isbn);
     if (cached) {
@@ -145,6 +165,7 @@ export class CatalogPage {
       .pipe(
         catchError((err) => {
           console.error('Error fetching book details:', err);
+          this.toast.show('Nie udało się pobrać szczegółów książki.', 'error');
           this.selectedBook.set(null);
           return of(null);
         }),
@@ -161,13 +182,35 @@ export class CatalogPage {
     this.selectedBook.set(null);
   }
 
-  // Simulate adding a book to cart
+  // --- Add book to cart ---
   addToCart(event: MouseEvent, book: Book) {
     event.stopPropagation();
-    console.log(`Added to cart: ${book.title} (${book.isbn})`);
+
+    if (this.addingToCart() === book.isbn || this.cartItems().has(book.isbn)) {
+      this.toast.show('Ta książka jest już w koszyku.', 'info');
+      return;
+    }
+
+    this.addingToCart.set(book.isbn);
+    this.cart
+      .addItem({ isbn: book.isbn })
+      .pipe(
+        catchError((err) => {
+          console.error('Error adding to cart:', err);
+          this.toast.show('Nie udało się dodać książki.', 'error');
+          return of(null);
+        }),
+        finalize(() => this.addingToCart.set(null)),
+      )
+      .subscribe((res) => {
+        if (res) {
+          this.toast.show(`Dodano "${book.title}" do koszyka.`, 'success');
+          this.loadCartItems();
+        }
+      });
   }
 
-  // Close filter panel on outside click
+  // --- Close filter panel on outside click ---
   @HostListener('document:click', ['$event'])
   closeOnOutsideClick(event: MouseEvent) {
     if (!this.filterPanelOpen()) return;

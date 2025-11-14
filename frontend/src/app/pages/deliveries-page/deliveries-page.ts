@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
-import { Navbar } from '@shared/navbar/navbar';
+import { NavbarComponent } from '@shared/navbar/navbar.component';
 
 @Component({
   selector: 'app-deliveries-page',
-  imports: [Navbar],
+  imports: [NavbarComponent],
   templateUrl: './deliveries-page.html',
   styleUrl: './deliveries-page.scss',
 })

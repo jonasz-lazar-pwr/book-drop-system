@@ -1,0 +1,22 @@
+@keyframes fadeInDown {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -15px);
+  }
+  10% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  90% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -15px);
+  }
+}
+
+.animate-fade-in-down {
+  animation: fadeInDown 2.5s ease forwards;
+}

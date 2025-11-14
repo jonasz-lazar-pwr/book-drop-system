@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
-import { Navbar } from '@shared/navbar/navbar';
+import { NavbarComponent } from '@shared/navbar/navbar.component';
 
 @Component({
   selector: 'app-lockers-page',
-  imports: [Navbar],
+  imports: [NavbarComponent],
   templateUrl: './lockers-page.html',
   styleUrl: './lockers-page.scss',
 })

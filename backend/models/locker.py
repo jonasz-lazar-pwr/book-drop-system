@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from geoalchemy2 import Geography
+from geoalchemy2 import Geography, WKBElement
 from sqlalchemy import Index, String, Text, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -39,7 +39,7 @@ class Locker(Base):
     city: Mapped[str] = mapped_column(Text, nullable=False, comment="City name.")
     postal_code: Mapped[str] = mapped_column(String(10), nullable=False, comment="Postal code.")
 
-    location: Mapped[str] = mapped_column(
+    location: Mapped[WKBElement] = mapped_column(
         Geography(geometry_type="POINT", srid=4326, spatial_index=False),
         nullable=False,
         comment="Locker coordinates (PostGIS POINT, WGS84).",

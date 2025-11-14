@@ -94,8 +94,9 @@
     >
       @for (book of books(); track book.isbn) {
         <div
-          class="bg-white rounded-xl shadow hover:shadow-lg transition-all p-4 flex gap-4 cursor-pointer"
-          (click)="openBookDetails(book)"
+          class="bg-white rounded-xl shadow hover:shadow-lg transition-all p-4 flex gap-4"
+          [class.cursor-pointer]="!selectedBook()"
+          (click)="!selectedBook() && openBookDetails(book)"
           (keyup.enter)="openBookDetails(book)"
           tabindex="0"
           role="button"
@@ -126,8 +127,11 @@
 
             @if (book.available_count > 0) {
               <button
-                class="absolute bottom-0 right-0 p-2 text-gray-400 hover:text-green-600 transition-transform duration-200 hover:scale-110"
-                title="Dodaj do koszyka"
+                class="absolute bottom-0 right-0 p-2 text-gray-400 book-add-btn"
+                [class.text-green-600]="!cartItems().has(book.isbn)"
+                [class.text-gray-300]="cartItems().has(book.isbn)"
+                [disabled]="cartItems().has(book.isbn)"
+                title="{{ cartItems().has(book.isbn) ? 'Już w koszyku' : 'Dodaj do koszyka' }}"
                 (click)="addToCart($event, book)"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -287,6 +291,7 @@
   @if (selectedBook()) {
     <app-book-details
       [book]="selectedBook()!"
+      [cartItems]="cartItems()"
       (closed)="closeBookDetails()"
     ></app-book-details>
   }

@@ -9,11 +9,16 @@ from dotenv import load_dotenv
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
-from sqlalchemy import text
+from sqlalchemy import text, select
+from fastapi import Request, HTTPException, status
+
 from api.main import app
-from core.deps import get_db
+from core.deps import get_db, get_current_user
+from core.security import verify_token
+from models import User
 
 
+# --- Environment setup ---
 env_path = Path(__file__).resolve().parents[1] / ".env.test"
 load_dotenv(env_path)
 
@@ -25,6 +30,9 @@ DB_NAME = os.getenv("DB_NAME")
 
 TEST_DB_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 INIT_SQL = Path(__file__).resolve().parents[1] / "init_db.sql"
+
+
+# --- Fixtures ---
 
 
 @pytest_asyncio.fixture(scope="session")
@@ -114,8 +122,45 @@ async def clear_test_data(db_session):
         book_item,
         book,
         cart_item,
-        cart
+        cart,
+        locker,
+        locker_box,
+        locker_shipment,
+        "order",
+        order_item
     RESTART IDENTITY CASCADE;
     """
     await db_session.execute(text(truncate_sql))
     await db_session.commit()
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def override_auth(client, db_session):
+    """Override get_current_user to support both test-UUID and real JWT tokens."""
+
+    async def fake_get_current_user(request: Request):
+        auth = request.headers.get("Authorization")
+        if not auth or not auth.startswith("Bearer "):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+        token = auth.replace("Bearer ", "").strip()
+
+        # Case 1: test token (used in cart tests)
+        if token.startswith("test-"):
+            user_id = token.replace("test-", "")
+        else:
+            # Case 2: real JWT (used in /auth/me)
+            decoded = verify_token(token)
+            if not decoded or "sub" not in decoded:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+            user_id = decoded["sub"]
+
+        user = await db_session.scalar(select(User).where(User.id == user_id))
+        if not user:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+        return user
+
+    app.dependency_overrides[get_current_user] = fake_get_current_user
+    yield
+    app.dependency_overrides.pop(get_current_user, None)

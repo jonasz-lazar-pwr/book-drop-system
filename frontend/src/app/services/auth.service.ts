@@ -56,7 +56,7 @@ export class AuthService {
 
   canAccess(role: string, path: string): boolean {
     const accessMap: Record<string, string[]> = {
-      reader: ['/catalog', '/orders', '/lockers', '/profile', '/cart'],
+      reader: ['/catalog', '/orders', '/lockers', '/profile', '/cart', '/checkout'],
       librarian: ['/catalog', '/orders', '/returns', '/profile'],
       courier: ['/deliveries', '/profile'],
     };

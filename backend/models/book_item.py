@@ -57,8 +57,9 @@ class BookItem(Base):
     )
 
     book: Mapped["Book"] = relationship(back_populates="items", lazy="joined")
+
     order_items: Mapped[List["OrderItem"]] = relationship(
-        back_populates="book_item", cascade="all, delete-orphan", lazy="selectin"
+        back_populates="book_item", cascade="save-update", lazy="selectin"
     )
 
     __table_args__ = (

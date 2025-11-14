@@ -8,6 +8,7 @@ import { LockersPage } from '@pages/lockers-page/lockers-page';
 import { ReturnsPage } from '@pages/returns-page/returns-page';
 import { DeliveriesPage } from '@pages/deliveries-page/deliveries-page';
 import { CartPage } from '@pages/cart-page/cart-page';
+import { CheckoutPage } from '@pages/checkout-page/checkout-page';
 import { ProfilePage } from '@pages/profile-page/profile-page';
 import { authGuard } from '@guards/auth-guard';
 import { guestGuard } from '@guards/guest-guard';
@@ -23,6 +24,7 @@ export const routes: Routes = [
   { path: 'returns', component: ReturnsPage, canActivate: [authGuard] },
   { path: 'deliveries', component: DeliveriesPage, canActivate: [authGuard] },
   { path: 'cart', component: CartPage, canActivate: [authGuard] },
+  { path: 'checkout', component: CheckoutPage, canActivate: [authGuard] },
   { path: 'profile', component: ProfilePage, canActivate: [authGuard] },
 
   { path: '**', redirectTo: '' },

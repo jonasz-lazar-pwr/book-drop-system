@@ -1,11 +1,11 @@
 import { Component, inject } from '@angular/core';
-import { Navbar } from '@shared/navbar/navbar';
+import { NavbarComponent } from '@shared/navbar/navbar.component';
 import { AuthService } from '@services/auth.service';
 import { AsyncPipe } from '@angular/common';
 
 @Component({
   selector: 'app-profile-page',
-  imports: [Navbar, AsyncPipe],
+  imports: [NavbarComponent, AsyncPipe],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.scss',
 })

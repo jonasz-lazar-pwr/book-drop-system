@@ -1,6 +1,148 @@
 <app-navbar></app-navbar>
 
-<div class="p-8">
-  <h1 class="text-3xl font-bold text-[#004E89] mb-4">Koszyk</h1>
-  <p class="text-gray-700">Tutaj pojawią się książki dodane do koszyka.</p>
+<div class="p-8 max-w-5xl mx-auto animate-fade-in">
+  <h1 class="text-3xl font-bold text-[#004E89] mb-8 text-center sm:text-left">
+    Twój koszyk
+  </h1>
+
+  @if (loading()) {
+    <div class="flex flex-col items-center justify-center py-20">
+      <div class="h-10 w-10 border-4 border-blue-100 border-t-[#004E89] rounded-full animate-spin"></div>
+      <p class="text-gray-500 mt-4">Ładowanie zawartości koszyka...</p>
+    </div>
+  }
+
+  @if (!loading() && !hasItems()) {
+    <div class="flex flex-col items-center justify-center py-24 text-gray-600 animate-fade-in">
+      <p class="text-lg mb-4">Twój koszyk jest pusty.</p>
+      <a
+        routerLink="/catalog"
+        class="inline-block bg-[#004E89] text-white px-6 py-2.5 rounded-lg shadow hover:bg-[#0074D9] transition-all hover:scale-[1.03]"
+      >
+        Przeglądaj katalog
+      </a>
+    </div>
+  }
+
+  @if (hasItems() && !loading()) {
+    <div class="space-y-6 animate-fade-in">
+      @for (item of cart()!.items; track item.isbn) {
+        <div
+          class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center justify-between gap-6 hover:shadow-lg hover:scale-[1.01] transition-all duration-200"
+        >
+          <div class="flex items-center gap-4">
+            <img
+              ngSrc="{{ item.thumbnail || '/assets/book-placeholder.png' }}"
+              width="80"
+              height="100"
+              alt="Okładka"
+              class="w-20 h-28 object-cover rounded-lg shadow-sm"
+            />
+            <div>
+              <h3 class="text-lg font-semibold text-[#004E89] leading-snug">
+                {{ item.title }}
+              </h3>
+              <p class="text-gray-600 text-sm">{{ item.authors }}</p>
+              <p class="text-gray-400 text-xs mt-1">ISBN: {{ item.isbn }}</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-4">
+            <div
+              class="flex items-center border border-gray-300 rounded-lg overflow-hidden shadow-sm bg-white"
+            >
+              <button
+                (click)="changeQuantity(item, -1)"
+                class="px-3 py-2 text-gray-500 hover:bg-blue-50 hover:text-[#004E89] transition disabled:opacity-40 flex items-center justify-center"
+                [disabled]="loading()"
+                title="Zmniejsz ilość"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  class="w-5 h-5"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M4 10a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H4.75A.75.75 0 0 1 4 10Z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </button>
+
+              <span class="px-4 font-medium select-none text-gray-800">{{ item.quantity }}</span>
+
+              <button
+                (click)="changeQuantity(item, +1)"
+                class="px-3 py-2 text-gray-500 hover:bg-blue-50 hover:text-[#004E89] transition disabled:opacity-40 flex items-center justify-center"
+                [disabled]="loading()"
+                title="Zwiększ ilość"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  class="w-5 h-5"
+                >
+                  <path
+                    d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <button
+              (click)="removeItem(item.isbn)"
+              class="text-gray-400 hover:text-red-500 hover:scale-110 transition-all duration-200"
+              title="Usuń z koszyka"
+              [disabled]="loading()"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.8"
+                stroke="currentColor"
+                class="w-6 h-6"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M6 18 18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      }
+
+      <div
+        class="mt-10 flex flex-col sm:flex-row justify-between items-center gap-4 border-t pt-6"
+      >
+        <p class="text-gray-700 text-lg text-center sm:text-left">
+          Łącznie książek:
+          <span class="font-semibold text-[#004E89]">{{ totalItems() }}</span>
+        </p>
+
+        <div class="flex gap-3">
+          <button
+            (click)="clearCart()"
+            class="border border-gray-300 text-gray-700 px-5 py-2.5 rounded-lg hover:bg-gray-100 hover:shadow transition-all disabled:opacity-40"
+            [disabled]="loading()"
+          >
+            Wyczyść koszyk
+          </button>
+
+          <button
+            (click)="submitCart()"
+            class="bg-[#004E89] text-white px-6 py-2.5 rounded-lg shadow hover:bg-[#0074D9] hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-40"
+            [disabled]="submitting() || loading()"
+          >
+            {{ submitting() ? 'Wysyłanie...' : 'Przejdź dalej' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </div>

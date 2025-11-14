@@ -11,23 +11,18 @@ Endpoints:
 """
 
 from typing import List
-from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.deps import get_current_user, get_db
-from models import User
+from core.deps import get_db
 from repositories.catalog_repository import CatalogRepository
 from schemas.catalog import (
-    AddToCartRequest,
-    AddToCartResponse,
     BookDetail,
     BookListItem,
     BookListResponse,
     CatalogFilters,
 )
-from services.cart_service import CartService
 
 router = APIRouter(tags=["Catalog"])
 
@@ -83,22 +78,3 @@ async def get_book(isbn: str, db: AsyncSession = Depends(get_db)):
 async def list_publishers(db: AsyncSession = Depends(get_db)):
     """Return all publishers."""
     return await CatalogRepository.list_publishers(db)
-
-
-@router.post(
-    "/books/{isbn}/cart",
-    response_model=AddToCartResponse,
-    summary="Add book to cart",
-    description="Requires authentication. Adds an available book copy to the user's cart.",
-    status_code=status.HTTP_200_OK,
-)
-async def add_to_cart(
-    isbn: str,
-    payload: AddToCartRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Add a book to user's cart."""
-
-    item = await CartService.add_to_cart(db, UUID(str(current_user.id)), isbn, payload.quantity)
-    return AddToCartResponse(message="Book added to cart successfully.", cart_item=item)

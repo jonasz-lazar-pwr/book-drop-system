@@ -34,8 +34,10 @@ class OrderItem(Base):
         comment="Parent order reference.",
     )
 
-    book_item_id: Mapped[str] = mapped_column(
-        ForeignKey("book_item.id"), nullable=False, comment="Assigned physical book copy."
+    book_item_id: Mapped[str | None] = mapped_column(
+        ForeignKey("book_item.id"),
+        nullable=True,
+        comment="Assigned physical book copy (may be NULL until librarian assigns).",
     )
 
     due_date: Mapped[datetime | None] = mapped_column(
@@ -67,5 +69,5 @@ class OrderItem(Base):
         """Return a readable string representation of the order item."""
         return (
             f"<OrderItem(id={self.id}, order_id={self.order_id}, "
-            f"book_item_id={self.book_item_id}, due_date={self.due_date}, returned_at={self.returned_at})>"
+            f"book_item_id={self.book_item_id or 'None'}, due_date={self.due_date}, returned_at={self.returned_at})>"
         )

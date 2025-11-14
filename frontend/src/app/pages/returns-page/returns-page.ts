@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
-import { Navbar } from '@shared/navbar/navbar';
+import { NavbarComponent } from '@shared/navbar/navbar.component';
 
 @Component({
   selector: 'app-returns-page',
-  imports: [Navbar],
+  imports: [NavbarComponent],
   templateUrl: './returns-page.html',
   styleUrl: './returns-page.scss',
 })
