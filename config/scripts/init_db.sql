@@ -1,30 +1,22 @@
 -- =====================================================
---  BookDrop — Database Initialization Script (v1.1)
+--  BookDrop — Database Initialization Script (v1.3)
 --  PostgreSQL 15 + PostGIS 3.4
 -- =====================================================
 
--- =====================================================
---  Environment setup
--- =====================================================
-CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+-- Drop entire public schema
+DROP SCHEMA IF EXISTS public CASCADE;
+CREATE SCHEMA public;
+
+-- Restore permissions
+GRANT ALL ON SCHEMA public TO bookdrop;
 SET search_path TO public;
 
--- =====================================================
---  Reset (drop existing tables and ENUM types)
--- =====================================================
-DROP TABLE IF EXISTS locker_shipment CASCADE;
-DROP TABLE IF EXISTS order_item CASCADE;
-DROP TABLE IF EXISTS "order" CASCADE;
-DROP TABLE IF EXISTS cart_item CASCADE;
-DROP TABLE IF EXISTS cart CASCADE;
-DROP TABLE IF EXISTS locker_box CASCADE;
-DROP TABLE IF EXISTS locker CASCADE;
-DROP TABLE IF EXISTS book_item CASCADE;
-DROP TABLE IF EXISTS book CASCADE;
-DROP TABLE IF EXISTS "user" CASCADE;
-
-DROP TYPE IF EXISTS user_role, order_status, shipment_mode, shipment_status, cart_status, book_location CASCADE;
+-- Re-create extensions inside the new schema
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS postgis_topology;
+CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
+CREATE EXTENSION IF NOT EXISTS postgis_tiger_geocoder;
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- =====================================================
 --  ENUM definitions
@@ -131,7 +123,6 @@ CREATE TABLE cart (
     updated_at timestamptz DEFAULT CURRENT_TIMESTAMP
 );
 COMMENT ON TABLE cart IS 'User shopping carts. Each user may have multiple carts (historical or active), but only one ACTIVE at a time.';
-
 CREATE INDEX idx_cart_user_id ON cart(user_id);
 
 -- Trigger to auto-update updated_at
@@ -206,6 +197,21 @@ CREATE TABLE order_item (
 COMMENT ON TABLE order_item IS 'Each record = one borrowed physical copy with return tracking.';
 CREATE INDEX idx_order_item_order     ON order_item(order_id);
 CREATE INDEX idx_order_item_book_item ON order_item(book_item_id);
+
+-- =====================================================
+--  Table: order_requested_item
+-- =====================================================
+CREATE TABLE order_requested_item (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID NOT NULL REFERENCES "order"(id) ON DELETE CASCADE,
+    isbn TEXT NOT NULL REFERENCES book(isbn),
+    quantity INT NOT NULL CHECK (quantity > 0),
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+COMMENT ON TABLE order_requested_item IS
+    'Logical snapshot of items requested in an order (ISBN + quantity). Used by librarian to assign physical book copies.';
+CREATE INDEX idx_order_requested_order ON order_requested_item(order_id);
+CREATE INDEX idx_order_requested_isbn ON order_requested_item(isbn);
 
 -- =====================================================
 --  Table: locker
@@ -287,7 +293,7 @@ BEGIN
   IF TG_OP = 'INSERT' THEN
     UPDATE book_item
     SET is_available = FALSE,
-        current_location = 'borrowed'
+        current_location = 'transit'
     WHERE id = NEW.book_item_id;
 
   ELSIF TG_OP = 'UPDATE' AND NEW.returned_at IS NOT NULL THEN

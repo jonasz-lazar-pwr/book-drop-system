@@ -20,41 +20,50 @@ export class NavbarComponent implements OnInit {
   showMenu = false;
   showMobileMenu = false;
   menuItems: { label: string; path: string }[] = [];
-
-  // Reactive badge
   cartCount = computed(() => this.cart.cartCount());
 
   ngOnInit(): void {
+    // Load current user on navbar init
     this.auth.getCurrentUser().subscribe({
       next: (u) => {
         this.user = u;
         this.setupMenu(u.role);
+
+        // Readers always have cart
         if (u.role === 'reader') {
           this.cart.getCart().subscribe();
         }
       },
-      error: () => (this.user = undefined),
+      error: () => {
+        this.user = undefined;
+        this.menuItems = [];
+      },
     });
   }
 
+  // Assign menu items based on role
   private setupMenu(role: string): void {
     switch (role) {
       case 'reader':
         this.menuItems = [
           { label: 'Katalog', path: '/catalog' },
           { label: 'Zamówienia', path: '/orders' },
-          { label: 'Książkomaty', path: '/lockers' },
         ];
         break;
+
       case 'librarian':
         this.menuItems = [
-          { label: 'Katalog', path: '/catalog' },
-          { label: 'Zamówienia', path: '/orders' },
-          { label: 'Zwroty', path: '/returns' },
+          { label: 'Zamówienia', path: '/librarian/orders' },
+          { label: 'Zwroty', path: '/librarian/returns' },
         ];
         break;
+
       case 'courier':
         this.menuItems = [{ label: 'Dostawy', path: '/deliveries' }];
+        break;
+
+      default:
+        this.menuItems = [];
         break;
     }
   }
@@ -63,16 +72,28 @@ export class NavbarComponent implements OnInit {
     this.showMobileMenu = !this.showMobileMenu;
   }
 
+  // Close profile dropdown when clicking outside
   @HostListener('document:click', ['$event'])
   closeOnOutsideClick(event: Event): void {
     const target = event.target as HTMLElement;
-    if (!target.closest('.profile-menu')) this.showMenu = false;
+    if (!target.closest('.profile-menu')) {
+      this.showMenu = false;
+    }
   }
 
+  // Clear session and redirect
   logout(): void {
     this.auth.logout().subscribe({
-      next: () => this.router.navigate(['/']),
-      error: () => this.router.navigate(['/']),
+      next: () => {
+        this.user = undefined;
+        this.menuItems = [];
+        this.router.navigate(['/login']);
+      },
+      error: () => {
+        this.user = undefined;
+        this.menuItems = [];
+        this.router.navigate(['/login']);
+      },
     });
   }
 }

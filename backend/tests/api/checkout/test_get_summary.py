@@ -5,7 +5,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import Book, BookItem, Cart, CartItem, User
+from models import Book, Cart, CartItem, User
 from models.enums import CartStatus, UserRole
 
 
@@ -21,9 +21,8 @@ async def test_get_summary_returns_active_cart(client: AsyncClient, db_session: 
         last_name="User",
     )
     book = Book(isbn="9781234567890", title="Domain-Driven Design", authors="Eric Evans")
-    book_item = BookItem(isbn=book.isbn, is_available=True)
 
-    db_session.add_all([user, book, book_item])
+    db_session.add_all([user, book])
     await db_session.commit()
     await db_session.refresh(user)
 
@@ -44,10 +43,12 @@ async def test_get_summary_returns_active_cart(client: AsyncClient, db_session: 
     # Assert
     assert res.status_code == 200
     data = res.json()
+
     assert data["user_id"] == str(user.id)
     assert data["email"] == user.email
     assert data["total_items"] == 2
     assert data["distinct_titles"] == 1
+
     assert data["books"][0]["isbn"] == book.isbn
     assert data["books"][0]["title"] == "Domain-Driven Design"
     assert data["books"][0]["quantity"] == 2

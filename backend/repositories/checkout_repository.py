@@ -13,9 +13,9 @@ from models import (
     LockerBox,
     LockerShipment,
     Order,
-    OrderItem,
+    OrderRequestedItem,
 )
-from models.enums import BookLocation, CartStatus, OrderStatus, ShipmentMode, ShipmentStatus
+from models.enums import CartStatus, OrderStatus, ShipmentMode, ShipmentStatus
 
 
 class CheckoutRepository:
@@ -132,7 +132,7 @@ class CheckoutRepository:
 
     @staticmethod
     async def submit_checkout(db: AsyncSession, user_id: str, locker_id: str):
-        """Submit checkout: create order, reserve books, and assign locker shipment."""
+        """Submit checkout using logical items (OrderRequestedItem)."""
         cart = await db.scalar(
             select(Cart).where(Cart.user_id == user_id, Cart.status == CartStatus.ACTIVE)
         )
@@ -177,28 +177,13 @@ class CheckoutRepository:
             db.add(order)
             await db.flush()
 
-            for ci in cart.items:
-                available_items = (
-                    await db.scalars(
-                        select(BookItem)
-                        .where(BookItem.isbn == ci.isbn, BookItem.is_available.is_(True))
-                        .limit(ci.quantity)
-                    )
-                ).all()
-
-                if len(available_items) < ci.quantity:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Book {ci.isbn} became unavailable during checkout.",
-                    )
-
-                for bi in available_items:
-                    bi.is_available = False
-                    bi.current_location = BookLocation.TRANSIT
-                    db.add(bi)
-
-                for _ in range(ci.quantity):
-                    db.add(OrderItem(order_id=order.id))
+            for item in cart.items:
+                requested = OrderRequestedItem(
+                    order_id=order.id,
+                    isbn=item.isbn,
+                    quantity=item.quantity,
+                )
+                db.add(requested)
 
             box.is_available = False
             db.add(box)

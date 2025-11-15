@@ -1,19 +1,14 @@
-CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+DROP SCHEMA IF EXISTS public CASCADE;
+CREATE SCHEMA public;
+
+GRANT ALL ON SCHEMA public TO bookdrop;
 SET search_path TO public;
 
-DROP TABLE IF EXISTS locker_shipment CASCADE;
-DROP TABLE IF EXISTS order_item CASCADE;
-DROP TABLE IF EXISTS "order" CASCADE;
-DROP TABLE IF EXISTS cart_item CASCADE;
-DROP TABLE IF EXISTS cart CASCADE;
-DROP TABLE IF EXISTS locker_box CASCADE;
-DROP TABLE IF EXISTS locker CASCADE;
-DROP TABLE IF EXISTS book_item CASCADE;
-DROP TABLE IF EXISTS book CASCADE;
-DROP TABLE IF EXISTS "user" CASCADE;
-
-DROP TYPE IF EXISTS user_role, order_status, shipment_mode, shipment_status, cart_status, book_location CASCADE;
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS postgis_topology;
+CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
+CREATE EXTENSION IF NOT EXISTS postgis_tiger_geocoder;
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TYPE user_role AS ENUM ('reader', 'librarian', 'courier');
 COMMENT ON TYPE user_role IS 'User role in the system.';
@@ -72,7 +67,6 @@ CREATE TABLE book (
     description TEXT,
     source TEXT
 );
-
 CREATE INDEX idx_book_title   ON book USING gin (to_tsvector('simple', title));
 CREATE INDEX idx_book_authors ON book USING gin (to_tsvector('simple', authors));
 
@@ -83,7 +77,6 @@ CREATE TABLE book_item (
     current_location book_location NOT NULL DEFAULT 'library',
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
 CREATE INDEX idx_book_item_isbn         ON book_item(isbn);
 CREATE INDEX idx_book_item_availability ON book_item(is_available);
 CREATE INDEX idx_book_item_location     ON book_item(current_location);
@@ -95,7 +88,6 @@ CREATE TABLE cart (
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamptz DEFAULT CURRENT_TIMESTAMP
 );
-
 CREATE INDEX idx_cart_user_id ON cart(user_id);
 
 CREATE OR REPLACE FUNCTION update_cart_timestamp()
@@ -119,7 +111,6 @@ CREATE TABLE cart_item (
     added_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (cart_id, isbn)
 );
-
 CREATE INDEX idx_cart_item_cart_id ON cart_item(cart_id);
 
 CREATE TABLE "order" (
@@ -129,7 +120,6 @@ CREATE TABLE "order" (
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamptz
 );
-
 CREATE INDEX idx_order_reader ON "order"(reader_id);
 CREATE INDEX idx_order_status ON "order"(status);
 
@@ -156,9 +146,18 @@ CREATE TABLE order_item (
     CONSTRAINT ck_order_dates CHECK (returned_at IS NULL OR returned_at >= due_date),
     CONSTRAINT uq_book_item_once UNIQUE (book_item_id)
 );
-
 CREATE INDEX idx_order_item_order     ON order_item(order_id);
 CREATE INDEX idx_order_item_book_item ON order_item(book_item_id);
+
+CREATE TABLE order_requested_item (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID NOT NULL REFERENCES "order"(id) ON DELETE CASCADE,
+    isbn TEXT NOT NULL REFERENCES book(isbn),
+    quantity INT NOT NULL CHECK (quantity > 0),
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_order_requested_order ON order_requested_item(order_id);
+CREATE INDEX idx_order_requested_isbn ON order_requested_item(isbn);
 
 CREATE TABLE locker (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -168,7 +167,6 @@ CREATE TABLE locker (
     postal_code VARCHAR(10) NOT NULL,
     location GEOGRAPHY(Point, 4326) NOT NULL
 );
-
 CREATE INDEX idx_locker_location ON locker USING GIST(location);
 CREATE INDEX idx_locker_city  ON locker(city);
 
@@ -179,7 +177,6 @@ CREATE TABLE locker_box (
     is_available BOOLEAN NOT NULL DEFAULT TRUE,
     UNIQUE (locker_id, number)
 );
-
 CREATE INDEX idx_locker_box_available ON locker_box(is_available);
 
 CREATE TABLE locker_shipment (
@@ -193,7 +190,6 @@ CREATE TABLE locker_shipment (
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT ck_pickup_code_length CHECK (pickup_code IS NULL OR char_length(pickup_code) = 8)
 );
-
 CREATE INDEX idx_shipment_order  ON locker_shipment(order_id);
 CREATE INDEX idx_shipment_mode   ON locker_shipment(mode);
 CREATE INDEX idx_shipment_status ON locker_shipment(status);
@@ -225,7 +221,7 @@ BEGIN
   IF TG_OP = 'INSERT' THEN
     UPDATE book_item
     SET is_available = FALSE,
-        current_location = 'borrowed'
+        current_location = 'transit'
     WHERE id = NEW.book_item_id;
 
   ELSIF TG_OP = 'UPDATE' AND NEW.returned_at IS NOT NULL THEN

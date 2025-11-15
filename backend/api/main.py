@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from api.routes import auth, cart, catalog, checkout, seed
+from api.routes import auth, cart, catalog, checkout, librarian, seed
 from core.middleware import add_middleware
 
 # Configure basic logging
@@ -52,3 +52,4 @@ app.include_router(seed.router, prefix="/api/seed")
 app.include_router(catalog.router, prefix="/api/catalog")
 app.include_router(cart.router, prefix="/api/cart")
 app.include_router(checkout.router, prefix="/api/checkout")
+app.include_router(librarian.router, prefix="/api/librarian")

@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.base import Base
-from models.enums import BookLocation, book_location_enum
+from models.enums import book_location_enum
 
 if TYPE_CHECKING:
     from models.book import Book
@@ -42,7 +42,7 @@ class BookItem(Base):
         comment="Indicates if the copy is currently available.",
     )
 
-    current_location: Mapped[BookLocation] = mapped_column(
+    current_location: Mapped[str] = mapped_column(
         book_location_enum,
         nullable=False,
         server_default=text("'library'"),
@@ -72,5 +72,5 @@ class BookItem(Base):
         """Return a readable representation of the book copy."""
         return (
             f"<BookItem(id={self.id}, isbn='{self.isbn}', "
-            f"available={self.is_available}, location='{self.current_location.value}')>"
+            f"available={self.is_available}, location='{self.current_location}')>"
         )

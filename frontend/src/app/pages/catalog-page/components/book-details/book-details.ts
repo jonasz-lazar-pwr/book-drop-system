@@ -2,7 +2,6 @@ import { Component, Input, Output, EventEmitter, signal, OnChanges, inject } fro
 import { DatePipe, NgOptimizedImage } from '@angular/common';
 import { Book } from '@models/catalog';
 import { CartService } from '@services/cart.service';
-import { ToastService } from '@services/toast.service';
 import { catchError, finalize, of } from 'rxjs';
 
 @Component({
@@ -13,7 +12,6 @@ import { catchError, finalize, of } from 'rxjs';
 })
 export class BookDetails implements OnChanges {
   private readonly cart = inject(CartService);
-  private readonly toast = inject(ToastService);
 
   @Input() book!: Book;
   @Input() cartItems = new Set<string>();
@@ -35,14 +33,12 @@ export class BookDetails implements OnChanges {
       .pipe(
         catchError((err) => {
           console.error('Error adding to cart:', err);
-          this.toast.show('Nie udało się dodać książki do koszyka.', 'error');
           return of(null);
         }),
         finalize(() => this.adding.set(false)),
       )
       .subscribe((res) => {
         if (res) {
-          this.toast.show(`Dodano "${this.book.title}" do koszyka.`, 'success');
           this.cartItems.add(this.book.isbn);
         }
       });

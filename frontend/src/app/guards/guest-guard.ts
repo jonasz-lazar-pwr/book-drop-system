@@ -6,18 +6,18 @@ import { firstValueFrom } from 'rxjs';
 
 export const guestGuard: CanActivateFn = async () => {
   const storage = inject(StorageService);
-  const router = inject(Router);
   const auth = inject(AuthService);
+  const router = inject(Router);
 
-  // Allow access only for unauthenticated users
   if (!storage.isAuthenticated()) return true;
 
   try {
+    console.debug('[guestGuard] User logged in, redirecting');
     const user = await firstValueFrom(auth.getCurrentUser());
-    const target = user ? auth.getRedirectPathForRole(user.role) : '/';
-    await router.navigate([target]);
+    await router.navigate([auth.getRedirectPathForRole(user.role)]);
   } catch {
-    await router.navigate(['/']);
+    storage.clear();
+    await router.navigate(['/login']);
   }
 
   return false;

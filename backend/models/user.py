@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.base import Base
-from models.enums import UserRole, user_role_enum
+from models.enums import user_role_enum
 
 if TYPE_CHECKING:
     from models.cart import Cart
@@ -35,7 +35,7 @@ class User(Base):
 
     password: Mapped[str] = mapped_column(String, nullable=False, comment="Hashed password.")
 
-    role: Mapped[UserRole] = mapped_column(
+    role: Mapped[str] = mapped_column(
         user_role_enum, nullable=False, comment="User role: reader, librarian, or courier."
     )
 
@@ -63,4 +63,4 @@ class User(Base):
 
     def __repr__(self) -> str:
         """Return a readable string representation of the user."""
-        return f"<User(id={self.id}, email='{self.email}', role='{self.role.value}')>"
+        return f"<User(id={self.id}, email='{self.email}', role='{self.role}')>"

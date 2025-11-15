@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.base import Base
-from models.enums import ShipmentMode, ShipmentStatus, shipment_mode_enum, shipment_status_enum
+from models.enums import shipment_mode_enum, shipment_status_enum
 
 if TYPE_CHECKING:
     from models.locker_box import LockerBox
@@ -43,11 +43,11 @@ class LockerShipment(Base):
         comment="Locker box used for this operation.",
     )
 
-    mode: Mapped[ShipmentMode] = mapped_column(
+    mode: Mapped[str] = mapped_column(
         shipment_mode_enum, nullable=False, comment="Operation type: delivery or return."
     )
 
-    status: Mapped[ShipmentStatus] = mapped_column(
+    status: Mapped[str] = mapped_column(
         shipment_status_enum, nullable=False, comment="Current logistics stage."
     )
 
@@ -91,4 +91,4 @@ class LockerShipment(Base):
 
     def __repr__(self) -> str:
         """Return a readable string representation of the shipment."""
-        return f"<LockerShipment(id={self.id}, mode='{self.mode.value}', status='{self.status.value}')>"
+        return f"<LockerShipment(id={self.id}, mode='{self.mode}', status='{self.status}')>"

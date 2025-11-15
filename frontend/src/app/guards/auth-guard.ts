@@ -1,35 +1,36 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router, ActivatedRouteSnapshot } from '@angular/router';
+import { CanActivateFn, Router } from '@angular/router';
 import { StorageService } from '@services/storage.service';
 import { AuthService } from '@services/auth.service';
 import { firstValueFrom } from 'rxjs';
 
-export const authGuard: CanActivateFn = async (route: ActivatedRouteSnapshot) => {
+export const authGuard: CanActivateFn = async (route, state) => {
   const storage = inject(StorageService);
-  const router = inject(Router);
   const auth = inject(AuthService);
+  const router = inject(Router);
 
-  // Check authentication
+  // Block access if user is not authenticated
   if (!storage.isAuthenticated()) {
-    await router.navigate(['/']);
+    await router.navigate(['/login']);
     return false;
   }
 
   try {
+    // Load user information (cached or fresh)
     const user = await firstValueFrom(auth.getCurrentUser());
-    const path = '/' + route.routeConfig?.path;
+    const path = state.url.split('?')[0];
 
-    // Check role access permission
+    // Check role-based access to route
     if (!auth.canAccess(user.role, path)) {
-      const redirect = auth.getRedirectPathForRole(user.role);
-      await router.navigate([redirect]);
+      await router.navigate([auth.getRedirectPathForRole(user.role)]);
       return false;
     }
 
     return true;
   } catch {
-    // Redirect to home if token or session invalid
-    await router.navigate(['/']);
+    // Invalid token / failed request → clear session
+    storage.clear();
+    await router.navigate(['/login']);
     return false;
   }
 };

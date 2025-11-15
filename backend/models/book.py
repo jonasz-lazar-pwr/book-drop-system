@@ -11,6 +11,7 @@ from models.base import Base
 
 if TYPE_CHECKING:
     from models.book_item import BookItem
+    from models.order_requested_item import OrderRequestedItem
 
 
 class Book(Base):
@@ -37,11 +38,16 @@ class Book(Base):
         back_populates="book", cascade="all, delete-orphan", lazy="selectin"
     )
 
+    requested_items: Mapped[list["OrderRequestedItem"]] = relationship(
+        back_populates="book",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+
     __table_args__ = (
         Index("idx_book_title", text("to_tsvector('simple', title)"), postgresql_using="gin"),
         Index("idx_book_authors", text("to_tsvector('simple', authors)"), postgresql_using="gin"),
     )
 
     def __repr__(self) -> str:
-        """Return a readable representation of the book."""
         return f"<Book(isbn='{self.isbn}', title='{self.title}')>"

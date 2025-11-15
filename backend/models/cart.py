@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.base import Base
-from models.enums import CartStatus, cart_status_enum
+from models.enums import cart_status_enum
 
 if TYPE_CHECKING:
     from models.cart_item import CartItem
@@ -35,7 +35,7 @@ class Cart(Base):
         comment="User who owns this cart. Multiple carts allowed; only one ACTIVE at a time.",
     )
 
-    status: Mapped[CartStatus] = mapped_column(
+    status: Mapped[str] = mapped_column(
         cart_status_enum,
         nullable=False,
         server_default=text("'active'"),
@@ -63,4 +63,4 @@ class Cart(Base):
     __table_args__ = (Index("idx_cart_user_id", "user_id"),)
 
     def __repr__(self) -> str:
-        return f"<Cart(id={self.id}, user_id={self.user_id}, status='{self.status.value}')>"
+        return f"<Cart(id={self.id}, user_id={self.user_id}, status='{self.status}')>"

@@ -1,0 +1,70 @@
+<app-navbar></app-navbar>
+
+<div class="p-8 max-w-6xl mx-auto">
+  <h1 class="text-3xl font-semibold mb-8 text-[#004E89]">Zamówienia</h1>
+
+  @if (loading()) {
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      @for (_ of [1,2,3,4,5,6]; track _) {
+        <div class="bg-white rounded-xl shadow p-5 animate-pulse h-40"></div>
+      }
+    </div>
+  }
+
+  @if (!loading()) {
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+      @for (o of orders(); track o.order_id) {
+
+        <div class="bg-white rounded-xl shadow p-5">
+          <div class="flex justify-between items-start mb-3">
+            <span class="font-medium text-[#004E89]">
+              {{ o.reader_first_name }} {{ o.reader_last_name }}
+            </span>
+
+            <span
+              class="px-2 py-1 rounded text-xs font-medium"
+              [ngClass]="statusClass(o.status)"
+            >
+              {{ o.status | statusLabel }}
+            </span>
+          </div>
+
+          <p class="text-gray-500 text-sm">
+            Zamówiono:
+            <span class="font-medium">{{ o.created_at | date:'yyyy-MM-dd HH:mm' }}</span>
+          </p>
+
+          <button
+            class="mt-4 bg-[#004E89] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#0074D9] transition w-full"
+            (click)="openOrderModal(o)"
+          >
+            {{ o.status === 'new' ? 'Przypisz egzemplarze' : 'Szczegóły' }}
+          </button>
+        </div>
+
+      }
+
+    </div>
+
+    @if (orders().length === 0) {
+      <p class="text-center text-gray-500 mt-10">
+        Brak zamówień do wyświetlenia.
+      </p>
+    }
+  }
+
+  @if (selectedAssignOrderId()) {
+    <app-librarian-order-assign
+      [orderId]="selectedAssignOrderId()!"
+      (closed)="closeAssign()"
+    />
+  }
+
+  @if (selectedDetailsOrderId()) {
+    <app-librarian-order-details
+      [orderId]="selectedDetailsOrderId()!"
+      (closed)="closeDetails()"
+    />
+  }
+</div>

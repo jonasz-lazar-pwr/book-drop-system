@@ -5,7 +5,6 @@ import { catchError, finalize, of, Subject, debounceTime } from 'rxjs';
 import { NavbarComponent } from '@shared/navbar/navbar.component';
 import { CatalogService } from '@services/catalog.service';
 import { CartService } from '@services/cart.service';
-import { ToastService } from '@services/toast.service';
 import { Book } from '@models/catalog';
 import { BookDetails } from '@pages/catalog-page/components/book-details/book-details';
 
@@ -18,7 +17,6 @@ import { BookDetails } from '@pages/catalog-page/components/book-details/book-de
 export class CatalogPage {
   private readonly catalog = inject(CatalogService);
   private readonly cart = inject(CartService);
-  private readonly toast = inject(ToastService);
 
   private bookCache = new Map<string, Book>();
   private searchSubject = new Subject<string>();
@@ -70,7 +68,6 @@ export class CatalogPage {
       .pipe(
         catchError((err) => {
           console.error('Error loading books:', err);
-          this.toast.show('Nie udało się wczytać katalogu.', 'error');
           return of({ items: [], total: 0 });
         }),
         finalize(() => this.loading.set(false)),
@@ -88,7 +85,6 @@ export class CatalogPage {
       .pipe(
         catchError((err) => {
           console.error('Error loading publishers:', err);
-          this.toast.show('Nie udało się wczytać wydawnictw.', 'error');
           return of([] as string[]);
         }),
       )
@@ -165,7 +161,6 @@ export class CatalogPage {
       .pipe(
         catchError((err) => {
           console.error('Error fetching book details:', err);
-          this.toast.show('Nie udało się pobrać szczegółów książki.', 'error');
           this.selectedBook.set(null);
           return of(null);
         }),
@@ -187,7 +182,6 @@ export class CatalogPage {
     event.stopPropagation();
 
     if (this.addingToCart() === book.isbn || this.cartItems().has(book.isbn)) {
-      this.toast.show('Ta książka jest już w koszyku.', 'info');
       return;
     }
 
@@ -197,14 +191,12 @@ export class CatalogPage {
       .pipe(
         catchError((err) => {
           console.error('Error adding to cart:', err);
-          this.toast.show('Nie udało się dodać książki.', 'error');
           return of(null);
         }),
         finalize(() => this.addingToCart.set(null)),
       )
       .subscribe((res) => {
         if (res) {
-          this.toast.show(`Dodano "${book.title}" do koszyka.`, 'success');
           this.loadCartItems();
         }
       });

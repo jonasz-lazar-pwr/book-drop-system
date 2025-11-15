@@ -23,24 +23,24 @@ services:
       timeout: 5s
       retries: 5
 
-#  # === BookDrop Test Database (isolated, no volume) ===
-#  bookdrop-database-test:
-#    image: postgis/postgis:15-3.4
-#    container_name: bookdrop-database-test
-#    environment:
-#      POSTGRES_DB: "bookdrop_test"
-#      POSTGRES_USER: "bookdrop"
-#      POSTGRES_PASSWORD: "bookdrop"
-#    ports:
-#      - "5442:5432"
-#    networks:
-#      - default
-#    restart: unless-stopped
-#    healthcheck:
-#      test: [ "CMD-SHELL", "pg_isready -U bookdrop -d bookdrop_test" ]
-#      interval: 5s
-#      timeout: 5s
-#      retries: 5
+  # === BookDrop Test Database (isolated, no volume) ===
+  bookdrop-database-test:
+    image: postgis/postgis:15-3.4
+    container_name: bookdrop-database-test
+    environment:
+      POSTGRES_DB: "bookdrop_test"
+      POSTGRES_USER: "bookdrop"
+      POSTGRES_PASSWORD: "bookdrop"
+    ports:
+      - "5442:5432"
+    networks:
+      - default
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U bookdrop -d bookdrop_test" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # === BookDrop Backend (FastAPI + Uvicorn) ===
   bookdrop-backend:

@@ -10,11 +10,12 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.base import Base
-from models.enums import OrderStatus, order_status_enum
+from models.enums import order_status_enum
 
 if TYPE_CHECKING:
     from models.locker_shipment import LockerShipment
     from models.order_item import OrderItem
+    from models.order_requested_item import OrderRequestedItem
     from models.user import User
 
 
@@ -37,7 +38,7 @@ class Order(Base):
         comment="Reader who placed the order.",
     )
 
-    status: Mapped[OrderStatus] = mapped_column(
+    status: Mapped[str] = mapped_column(
         order_status_enum,
         nullable=False,
         server_default=text("'new'"),
@@ -56,11 +57,23 @@ class Order(Base):
     )
 
     reader: Mapped["User"] = relationship(back_populates="orders", lazy="joined")
+
     items: Mapped[list["OrderItem"]] = relationship(
-        back_populates="order", cascade="all, delete-orphan", lazy="selectin"
+        back_populates="order",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
+
     shipments: Mapped[list["LockerShipment"]] = relationship(
-        back_populates="order", cascade="all, delete-orphan", lazy="selectin"
+        back_populates="order",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    requested_items: Mapped[list["OrderRequestedItem"]] = relationship(
+        back_populates="order",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
     __table_args__ = (
@@ -70,4 +83,4 @@ class Order(Base):
 
     def __repr__(self) -> str:
         """Return a readable string representation of the order."""
-        return f"<Order(id={self.id}, reader_id={self.reader_id}, status='{self.status.value}')>"
+        return f"<Order(id={self.id}, reader_id={self.reader_id}, status='{self.status}')>"

@@ -1,0 +1,120 @@
+<!-- Fullscreen overlay -->
+<div
+  class="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 flex items-center justify-center transition-opacity"
+  aria-label="Zamknij okno"
+  tabindex="0"
+  role="button"
+  (click)="closed.emit()"
+  (keydown.enter)="closed.emit()"
+  (keydown.space)="closed.emit()"
+>
+
+  <!-- Modal container -->
+  <div
+    class="details-modal bg-white rounded-2xl shadow-2xl w-full md:max-w-3xl p-8 max-h-[85vh]
+           overflow-y-auto relative animate-fadeIn cursor-default"
+    tabindex="0"
+    (click)="$event.stopPropagation()"
+    (keydown.enter)="$event.stopPropagation()"
+    (keydown.space)="$event.stopPropagation()"
+  >
+
+    <!-- Close button -->
+    <button
+      class="absolute top-4 right-4 text-gray-500 hover:text-[#004E89] transition"
+      aria-label="Zamknij"
+      (click)="closed.emit()"
+      (keydown.enter)="closed.emit()"
+      (keydown.space)="closed.emit()"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg"
+           fill="none"
+           viewBox="0 0 24 24"
+           stroke-width="1.5"
+           stroke="currentColor"
+           class="w-6 h-6">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M6 18 18 6M6 6l12 12" />
+      </svg>
+    </button>
+
+    @if (loading()) {
+      <p class="text-gray-500">Ładowanie...</p>
+    }
+
+    @if (!loading() && data()) {
+
+      <h2 class="text-2xl font-semibold text-[#004E89] mb-6">
+        Przypisz egzemplarze
+      </h2>
+
+      <div class="space-y-6">
+        @for (b of data()?.books ?? []; track b.isbn) {
+
+          <div class="border border-gray-200 rounded-xl p-5 shadow-sm bg-gray-50">
+
+            <h4 class="font-medium text-lg mb-4 text-[#004E89]">
+              {{ b.title }}
+            </h4>
+
+            <div class="space-y-4">
+              @for (idx of getIndexes(b.quantity); track idx) {
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Egzemplarz {{ idx + 1 }}
+                  </label>
+
+                  <!-- Select for choosing a book item -->
+                  <div class="relative">
+                    <select
+                      class="w-full border border-gray-300 rounded-lg px-3 pr-10 py-2.5 shadow-sm
+                             focus:ring-2 focus:ring-[#0074D9] focus:outline-none h-11 text-sm bg-white appearance-none"
+                      [ngModel]="selected()[b.isbn][idx]"
+                      (ngModelChange)="updateSelection(b.isbn, idx, $event)"
+                    >
+                      <option value="">Wybierz egzemplarz...</option>
+
+                      @for (item of (data()?.available_items?.[b.isbn] ?? []); track item.id) {
+                        <option [value]="item.id">
+                          {{ item.id }}
+                        </option>
+                      }
+                    </select>
+
+                    <!-- Custom dropdown arrow -->
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke-width="1.5"
+                      stroke="currentColor"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
+                    </svg>
+                  </div>
+
+                </div>
+              }
+            </div>
+          </div>
+
+        }
+      </div>
+
+      <!-- Confirm -->
+      <div class="mt-10">
+        <button
+          class="bg-[#004E89] hover:bg-[#0074D9] text-white px-6 py-3 rounded-lg transition shadow-md w-full font-medium"
+          (click)="assignItems()"
+          (keydown.enter)="assignItems()"
+          (keydown.space)="assignItems()"
+        >
+          Potwierdź
+        </button>
+      </div>
+
+    }
+  </div>
+</div>

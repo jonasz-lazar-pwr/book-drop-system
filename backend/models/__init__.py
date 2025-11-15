@@ -16,6 +16,7 @@ from .locker_box import LockerBox
 from .locker_shipment import LockerShipment
 from .order import Order
 from .order_item import OrderItem
+from .order_requested_item import OrderRequestedItem
 from .user import User
 
 __all__ = [
@@ -31,6 +32,7 @@ __all__ = [
     "LockerShipment",
     "Order",
     "OrderItem",
+    "OrderRequestedItem",
     "OrderStatus",
     "ShipmentMode",
     "ShipmentStatus",
