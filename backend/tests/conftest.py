@@ -1,11 +1,16 @@
 # === tests/conftest.py ===
-# ruff: noqa: I001
+# ruff: noqa: I001, E402
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+# --- Environment setup ---
+env_path = Path(__file__).resolve().parents[1] / ".env.test"
+load_dotenv(env_path, override=True)
+
 import asyncio
 import pytest_asyncio
-from dotenv import load_dotenv
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
@@ -17,10 +22,9 @@ from core.deps import get_db, get_current_user
 from core.security import verify_token
 from models import User
 
+from core.security import hash_password
+from core.security import create_access_token
 
-# --- Environment setup ---
-env_path = Path(__file__).resolve().parents[1] / ".env.test"
-load_dotenv(env_path)
 
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
@@ -30,9 +34,6 @@ DB_NAME = os.getenv("DB_NAME")
 
 TEST_DB_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 INIT_SQL = Path(__file__).resolve().parents[1] / "init_db.sql"
-
-
-# --- Fixtures ---
 
 
 @pytest_asyncio.fixture(scope="session")
@@ -164,3 +165,68 @@ async def override_auth(client, db_session):
     app.dependency_overrides[get_current_user] = fake_get_current_user
     yield
     app.dependency_overrides.pop(get_current_user, None)
+
+
+# ============================================
+# LIBRARIAN & READER FIXTURES
+# ============================================
+
+
+@pytest_asyncio.fixture
+async def reader_user(db_session: AsyncSession) -> User:
+    """Create a test reader user."""
+
+    user = User(
+        email="reader@test.com",
+        password=hash_password("testpassword"),
+        first_name="Test",
+        last_name="Reader",
+        role="reader",
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
+
+
+@pytest_asyncio.fixture
+async def librarian_user(db_session: AsyncSession) -> User:
+    """Create a test librarian user."""
+
+    user = User(
+        email="librarian@test.com",
+        password=hash_password("testpassword"),
+        first_name="Test",
+        last_name="Librarian",
+        role="librarian",
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
+
+
+@pytest_asyncio.fixture
+def reader_token(reader_user: User) -> str:
+    """Get authentication token for reader."""
+    user_data = {
+        "id": reader_user.id,
+        "email": reader_user.email,
+        "role": reader_user.role,
+        "first_name": reader_user.first_name,
+        "last_name": reader_user.last_name,
+    }
+    return create_access_token(user_data)
+
+
+@pytest_asyncio.fixture
+def librarian_token(librarian_user: User) -> str:
+    """Get authentication token for librarian."""
+    user_data = {
+        "id": librarian_user.id,
+        "email": librarian_user.email,
+        "role": librarian_user.role,
+        "first_name": librarian_user.first_name,
+        "last_name": librarian_user.last_name,
+    }
+    return create_access_token(user_data)

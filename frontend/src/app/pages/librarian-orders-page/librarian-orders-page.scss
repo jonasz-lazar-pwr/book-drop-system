@@ -1,0 +1,26 @@
+// Dodatkowe style dla ujednolicenia (opcjonalne)
+.order-card {
+  display: flex;
+  flex-direction: column;
+}
+
+//.font-mono {
+//  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+//}
+
+.tab-badge {
+  min-width: 22px;  // Równa szerokość dla cyfr 1-99
+  text-align: center;
+}
+
+// Responsive dla filtrów
+@media (max-width: 768px) {
+  .filters-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  input, select {
+    width: 100% !important;
+  }
+}

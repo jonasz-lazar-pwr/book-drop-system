@@ -7,7 +7,6 @@
   (click)="closed.emit()"
   (keydown)="onKey($event)"
 >
-
   <!-- Modal container -->
   <div
     class="details-modal bg-white rounded-2xl shadow-2xl w-full md:max-w-3xl p-8
@@ -15,7 +14,6 @@
     tabindex="0"
     (click)="$event.stopPropagation()"
   >
-
     <!-- Close button -->
     <button
       class="absolute top-4 right-4 text-gray-500 hover:text-[#004E89] transition"
@@ -23,103 +21,135 @@
       (click)="closed.emit()"
       (keydown)="onKey($event)"
     >
-      <svg xmlns="http://www.w3.org/2000/svg"
-           fill="none"
-           viewBox="0 0 24 24"
-           stroke-width="1.5"
-           stroke="currentColor"
-           class="w-6 h-6">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+        class="w-6 h-6"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
       </svg>
     </button>
 
     <!-- Loading state -->
     @if (loading()) {
-      <p class="text-gray-500">Ładowanie...</p>
+      <div class="flex items-center justify-center py-12">
+        <p class="text-gray-500 text-lg">Ładowanie szczegółów...</p>
+      </div>
     }
 
     <!-- Content -->
     @if (!loading() && data()) {
+      <!-- 🔥 HEADER Z UUID + STATUS (jak w kafelkach) -->
+      <div class="flex justify-between items-start mb-8">
+        <div>
+          <h2 class="text-3xl font-semibold text-[#004E89] mb-2">
+            Szczegóły zamówienia
+          </h2>
+          <div class="flex items-center gap-4 mb-2">
+            <!-- UUID jak w kafelkach -->
+            <h3 class="font-semibold text-lg text-[#004E89]">
+              {{ formatOrderId(data()!.order_id) }}
+            </h3>
+            <!-- Status badge -->
+            <span
+              class="px-3 py-1 rounded-full text-sm font-semibold tracking-wide"
+              [ngClass]="statusClass(data()!.status)"
+            >
+              {{ data()!.status | statusLabel }}
+            </span>
+          </div>
+          <!-- Data utworzenia -->
+          <p class="text-gray-500 text-sm font-medium">
+            Utworzono: {{ data()!.created_at | date: 'dd.MM.yyyy HH:mm' }}
+          </p>
+        </div>
+      </div>
 
-      <h2 class="text-2xl font-semibold text-[#004E89] mb-6">
-        Szczegóły zamówienia
-      </h2>
+      <!-- 🔥 CZYTELNIK - BEZ MAILA NA GÓRZE, TYLKO IMIĘ+NAZWISKO -->
+      <div class="mb-8 p-6 bg-gray-50 border border-gray-200 rounded-xl shadow-sm">
+        <h3 class="font-semibold text-xl text-[#004E89] mb-4">Czytelnik</h3>
 
-      <!-- Reader info -->
-      <div class="mb-6 p-5 bg-gray-50 border rounded-xl shadow-sm">
-        <h3 class="font-medium text-lg text-[#004E89] mb-3">Czytelnik</h3>
+        <!-- 🔥 GŁÓWNY: Imię i nazwisko (duże, wyraźne) -->
+        <div class="mb-4">
+          <p class="text-2xl font-semibold text-gray-900 leading-tight">
+            {{ data()!.reader.first_name }} {{ data()!.reader.last_name }}
+          </p>
+        </div>
 
-        <p class="text-gray-700">
-          <span class="font-semibold">Imię i nazwisko:</span>
-          {{ data()!.reader.first_name }} {{ data()!.reader.last_name }}
-        </p>
-
-        <p class="text-gray-700 mt-1">
-          <span class="font-semibold">Email:</span>
+        <!-- Email (mniejszy, podrzędny) -->
+        <p class="text-gray-600 text-sm">
           {{ data()!.reader.email }}
         </p>
       </div>
 
-      <!-- Order info -->
-      <div class="mb-6 p-5 bg-gray-50 border rounded-xl shadow-sm">
-        <h3 class="font-medium text-lg text-[#004E89] mb-3">Informacje o zamówieniu</h3>
-
-        <!-- Status with badge -->
-        <p class="text-gray-700 flex items-center gap-2">
-          <span class="font-semibold">Status:</span>
-
-          <span
-            class="px-2 py-1 rounded text-xs font-medium"
-            [ngClass]="statusClass(data()!.status)"
-          >
-            {{ data()!.status | statusLabel }}
-          </span>
-        </p>
-
-        <p class="text-gray-700 mt-1">
-          <span class="font-semibold">Utworzono:</span>
-          {{ data()!.created_at | date:'yyyy-MM-dd HH:mm' }}
-        </p>
-      </div>
-
-      <!-- Books list -->
-      <div class="space-y-6">
+      <!-- 🔥 KSIĄŻKI -->
+      <div class="space-y-6 mb-10">
         @for (b of data()!.books; track b.isbn) {
-
-          <div class="border border-gray-200 rounded-xl p-5 shadow-sm bg-white">
-
-            <h3 class="text-lg font-medium text-[#004E89] mb-3">
+          <div class="border border-gray-200 rounded-xl p-6 shadow-sm bg-white">
+            <h3 class="text-xl font-semibold text-[#004E89] mb-4 leading-tight">
               {{ b.title }}
             </h3>
 
-            <p class="text-gray-700"><span class="font-semibold">Autorzy:</span> {{ b.authors }}</p>
-            <p class="text-gray-700"><span class="font-semibold">Wydawnictwo:</span> {{ b.publisher }}</p>
-            <p class="text-gray-700"><span class="font-semibold">Data publikacji:</span> {{ b.published_date }}</p>
+            <div class="grid md:grid-cols-2 gap-4 mb-4 text-gray-700">
+              <p>
+                <span class="font-semibold">Autorzy:</span> {{ b.authors }}
+              </p>
+              <p>
+                <span class="font-semibold">Wydawnictwo:</span> {{ b.publisher }}
+              </p>
+              <p>
+                <span class="font-semibold">Data publikacji:</span> {{ b.published_date }}
+              </p>
+            </div>
 
-            <p class="text-gray-700 mt-3 mb-1 font-semibold">Egzemplarze:</p>
-
-            <ul class="list-disc ml-6 text-sm text-gray-700 space-y-1">
-              @for (id of b.assigned_items; track id) {
-                <li>{{ id }}</li>
-              }
-            </ul>
-
+            <!-- Egzemplarze -->
+            <div>
+              <p class="text-gray-700 font-semibold mb-3 text-base">Egzemplarze:</p>
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                @for (id of b.assigned_items; track id) {
+                  <div class="font-mono bg-gray-100 text-gray-700 text-xs px-3 py-2 rounded-lg font-medium truncate">
+                    {{ id.slice(-8).toUpperCase() }}
+                  </div>
+                }
+              </div>
+            </div>
           </div>
         }
       </div>
 
-      <!-- Close action -->
-      <div class="mt-10">
+      <!-- 🔥 ACTIONS - UJEDNOLICONE Z KAFELKAMI -->
+      <div class="flex flex-col md:flex-row gap-4 pt-4 border-t border-gray-100">
+        <!-- Zielony przycisk "Przyjmij zwrot" -->
+        @if (data()?.status === 'return_in_progress') {
+          <button
+            class="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-xl
+                   font-semibold text-base transition-all duration-200 shadow-lg hover:shadow-xl
+                   flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed
+                   transform hover:-translate-y-0.5"
+            [disabled]="accepting()"
+            (click)="acceptReturn()"
+          >
+            @if (!accepting()) {
+              <span>Przyjmij zwrot</span>
+            } @else {
+              <span>Przyjmowanie...</span>
+            }
+          </button>
+        }
+
+        <!-- Szary przycisk Zamknij -->
         <button
-          class="bg-gray-200 hover:bg-gray-300 text-gray-900 px-6 py-3 rounded-lg
-                 transition shadow-md w-full font-medium"
+          class="flex-1 md:flex-none bg-gray-200 hover:bg-gray-300 text-gray-900 px-8 py-4 rounded-xl
+                 font-semibold text-base transition-all duration-200 shadow-md hover:shadow-lg
+                 transform hover:-translate-y-0.5"
           (click)="closed.emit()"
-          (keydown)="onKey($event)"
         >
           Zamknij
         </button>
       </div>
-
     }
   </div>
 </div>

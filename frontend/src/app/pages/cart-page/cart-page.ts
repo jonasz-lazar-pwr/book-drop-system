@@ -1,7 +1,7 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
 import { catchError, finalize, of } from 'rxjs';
-import { NavbarComponent } from '@shared/navbar/navbar.component';
+import { NavbarComponent } from '@shared/components/navbar/navbar.component';
 import { CartService } from '@services/cart.service';
 import { CartItem, CartResponse } from '@models/cart';
 import { Router, RouterLink } from '@angular/router';

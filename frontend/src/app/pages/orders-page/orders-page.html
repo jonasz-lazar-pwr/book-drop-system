@@ -1,6 +1,182 @@
+<!-- orders-page.html -->
 <app-navbar></app-navbar>
 
-<div class="p-8">
-  <h1 class="text-3xl font-bold text-[#004E89] mb-4">Zamówienia</h1>
-  <p class="text-gray-700">Tutaj znajdziesz swoje aktywne i zrealizowane zamówienia.</p>
+<div class="p-8 max-w-7xl mx-auto">
+  <h1 class="text-3xl font-bold text-[#004E89] mb-6">Moje zamówienia</h1>
+
+  <!-- Tabs - 4 zakładki z licznikami -->
+  <div class="flex gap-2 mb-4 border-b border-gray-200">
+    <button
+      (click)="setTab('in_progress')"
+      [ngClass]="{
+        'border-b-2 border-blue-600 text-blue-900 font-semibold': activeTab() === 'in_progress',
+        'text-gray-500 hover:text-gray-700': activeTab() !== 'in_progress'
+      }"
+      class="px-4 py-2 transition"
+    >
+      W realizacji ({{ inProgressOrders().length }})
+    </button>
+    <button
+      (click)="setTab('ready')"
+      [ngClass]="{
+        'border-b-2 border-blue-600 text-blue-900 font-semibold': activeTab() === 'ready',
+        'text-gray-500 hover:text-gray-700': activeTab() !== 'ready'
+      }"
+      class="px-4 py-2 transition"
+    >
+      Gotowe do odbioru ({{ readyOrders().length }})
+    </button>
+    <button
+      (click)="setTab('borrowed')"
+      [ngClass]="{
+        'border-b-2 border-blue-600 text-blue-900 font-semibold': activeTab() === 'borrowed',
+        'text-gray-500 hover:text-gray-700': activeTab() !== 'borrowed'
+      }"
+      class="px-4 py-2 transition"
+    >
+      Wypożyczone ({{ borrowedOrders().length }})
+    </button>
+    <button
+      (click)="setTab('completed')"
+      [ngClass]="{
+        'border-b-2 border-blue-600 text-blue-900 font-semibold': activeTab() === 'completed',
+        'text-gray-500 hover:text-gray-700': activeTab() !== 'completed'
+      }"
+      class="px-4 py-2 transition"
+    >
+      Zakończone ({{ completedOrders().length }})
+    </button>
+  </div>
+
+  <!-- Filtry (Status + Sortowanie) -->
+  <div class="flex flex-col sm:flex-row gap-4 mb-6">
+    <!-- Status Filter -->
+    <div class="flex-1">
+      <label for="status-filter" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+      <select
+        id="status-filter"
+        [value]="statusFilter()"
+        (change)="setStatusFilter($any($event.target).value)"
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      >
+        <option value="all">Wszystkie</option>
+        @for (status of availableStatuses(); track status) {
+          <option [value]="status">{{ status | statusLabel }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Sort Order -->
+    <div class="flex-1">
+      <label for="sort-order" class="block text-sm font-medium text-gray-700 mb-1">Sortowanie</label>
+      <select
+        id="sort-order"
+        [value]="sortOrder()"
+        (change)="setSortOrder($any($event.target).value)"
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      >
+        <option value="newest">Najnowsze</option>
+        <option value="oldest">Najstarsze</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="grid gap-4">
+      @for (i of [1,2,3]; track i) {
+        <div class="bg-white rounded-xl shadow p-6 animate-pulse">
+          <div class="flex gap-4">
+            <div class="flex-1">
+              <div class="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+              <div class="h-3 bg-gray-200 rounded w-24"></div>
+            </div>
+            <div class="h-6 bg-gray-200 rounded w-24"></div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Orders List -->
+  @if (!loading()) {
+    <div class="grid gap-4">
+      @for (order of displayedOrders(); track order.id) {
+        <div
+          class="bg-white rounded-xl shadow hover:shadow-lg transition-all p-6 cursor-pointer"
+          (click)="openOrderDetails(order)"
+          (keyup.enter)="openOrderDetails(order)"
+          tabindex="0"
+          role="button"
+          attr.aria-label="Otwórz szczegóły zamówienia {{ formatOrderId(order.id) }}"
+        >
+          <div class="flex flex-col md:flex-row gap-4 md:items-center justify-between">
+            <!-- Left: Order Info -->
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-2">
+                <h3 class="font-semibold text-lg text-[#004E89]">
+                  {{ formatOrderId(order.id) }}
+                </h3>
+                <span
+                  [ngClass]="statusClass(order.status)"
+                  class="px-3 py-1 rounded-full text-xs font-medium"
+                >
+                  {{ order.status | statusLabel }}
+                </span>
+              </div>
+              <p class="text-gray-600 text-sm">
+                Złożono: {{ order.created_at | date: 'dd.MM.yyyy' }}
+              </p>
+              <p class="text-gray-500 text-sm">
+                {{ order.items.length }} {{ order.items.length === 1 ? 'książka' : 'książek' }}
+              </p>
+            </div>
+
+            <!-- Right: Book Thumbnails -->
+            <div class="flex items-center gap-2">
+              @for (thumbnail of getBookThumbnails(order); track $index) {
+                <img
+                  [ngSrc]="thumbnail"
+                  width="48"
+                  height="64"
+                  alt="Okładka książki"
+                  class="w-12 h-16 object-cover rounded shadow-sm"
+                />
+              }
+              @if (getRemainingBooksCount(order) > 0) {
+                <div
+                  class="w-12 h-16 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-600 font-medium"
+                >
+                  +{{ getRemainingBooksCount(order) }}
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      } @empty {
+        <div class="text-center py-12">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="w-16 h-16 mx-auto text-gray-300 mb-4"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+          </svg>
+          <p class="text-gray-500">Brak zamówień w tej kategorii</p>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Order Details Modal -->
+  @if (selectedOrder()) {
+    <app-order-details
+      [order]="selectedOrder()!"
+      (closed)="closeOrderDetails()"
+      (orderUpdated)="loadOrders()"
+      ></app-order-details>
+  }
 </div>

@@ -2,7 +2,7 @@ import { Component, signal, inject, computed, HostListener } from '@angular/core
 import { DatePipe, NgOptimizedImage } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { catchError, finalize, of, Subject, debounceTime } from 'rxjs';
-import { NavbarComponent } from '@shared/navbar/navbar.component';
+import { NavbarComponent } from '@shared/components/navbar/navbar.component';
 import { CatalogService } from '@services/catalog.service';
 import { CartService } from '@services/cart.service';
 import { Book } from '@models/catalog';

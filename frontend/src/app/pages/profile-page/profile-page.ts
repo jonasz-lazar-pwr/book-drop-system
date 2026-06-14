@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { NavbarComponent } from '@shared/navbar/navbar.component';
+import { NavbarComponent } from '@shared/components/navbar/navbar.component';
 import { AuthService } from '@services/auth.service';
 import { AsyncPipe } from '@angular/common';
 

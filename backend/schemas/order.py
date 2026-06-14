@@ -1,42 +1,79 @@
-# === schemas/oredr.py ===
+# schemas/order.py
 
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel
-
-from models.enums import OrderStatus
+from pydantic import BaseModel, ConfigDict
 
 
-class OrderItemSchema(BaseModel):
-    """Represents one book copy inside an order."""
+class InitiateReturnRequest(BaseModel):
+    """Request body for initiating a return."""
 
-    id: Optional[UUID]
-    book_item_id: Optional[UUID]
-    due_date: Optional[datetime]
-    returned_at: Optional[datetime]
+    locker_id: UUID
 
-    class Config:
-        orm_mode = True
+
+class LockerResponse(BaseModel):
+    """Locker information."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    locker_code: str
+    street: str
+    city: str
+    postal_code: str
+    latitude: float
+    longitude: float
+
+
+class LockerShipmentResponse(BaseModel):
+    """Shipment details with locker info."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    order_id: UUID
+    locker: LockerResponse
+    mode: str  # 'delivery' | 'return'
+    status: str  # ShipmentStatus enum
+    pickup_code: str
+    placed_at: Optional[datetime] = None
+    created_at: datetime
+
+
+class OrderItemResponse(BaseModel):
+    """Single order item (book copy)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    order_id: UUID
+    book_item_id: UUID
+    isbn: str
+    title: str
+    authors: str
+    publisher: Optional[str] = None
+    thumbnail: Optional[str] = None
+    due_date: Optional[datetime] = None
+    returned_at: Optional[datetime] = None
 
 
 class OrderResponse(BaseModel):
-    """Represents an order with its items."""
+    """Order with items and shipment."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: UUID
     reader_id: UUID
-    status: OrderStatus
+    status: str
     created_at: datetime
-    updated_at: Optional[datetime]
-    items: List[OrderItemSchema]
-
-    class Config:
-        orm_mode = True
+    updated_at: Optional[datetime] = None
+    items: List[OrderItemResponse]
+    shipment: Optional[LockerShipmentResponse] = None
 
 
-class SubmitOrderResponse(BaseModel):
-    """Response after submitting a cart into an order."""
+class MessageResponse(BaseModel):
+    """Generic success message."""
 
-    order_id: UUID
-    detail: str
+    message: str

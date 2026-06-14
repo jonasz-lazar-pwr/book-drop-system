@@ -54,7 +54,7 @@ export class NavbarComponent implements OnInit {
       case 'librarian':
         this.menuItems = [
           { label: 'Zamówienia', path: '/librarian/orders' },
-          { label: 'Zwroty', path: '/librarian/returns' },
+          // { label: 'Zwroty', path: '/librarian/returns' },
         ];
         break;
 

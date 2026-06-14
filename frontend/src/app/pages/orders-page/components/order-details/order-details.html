@@ -1,0 +1,367 @@
+<!-- order-details.html -->
+<div
+  class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+  (click)="close()"
+>
+  <div
+    class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+    (click)="$event.stopPropagation()"
+  >
+    <!-- Header -->
+    <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10 rounded-t-2xl">
+      <div>
+        <h2 class="text-2xl font-bold text-[#004E89]">Szczegóły zamówienia</h2>
+        <p class="text-gray-600 text-sm">{{ formatOrderId(order.id) }}</p>
+      </div>
+      <button
+        (click)="close()"
+        class="text-gray-400 hover:text-gray-600 transition"
+        aria-label="Zamknij"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="p-6 space-y-6">
+      <!-- STEP 1: DETAILS -->
+      @if (returnStep() === 'details') {
+        <!-- Basic Info -->
+        <div class="bg-gray-50 rounded-lg p-4 grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-sm text-gray-600 mb-1">Data złożenia</p>
+            <p class="font-semibold text-gray-900">{{ order.created_at | date: 'dd.MM.yyyy' }}</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-600 mb-1">Status</p>
+            <span
+              [ngClass]="statusClass(order.status)"
+              class="inline-block px-3 py-1 rounded-full text-sm font-medium"
+            >
+              {{ order.status | statusLabel }}
+            </span>
+          </div>
+
+          @if (order.status === 'ready_for_pickup' && order.shipment?.placed_at) {
+            <div class="col-span-2">
+              <p class="text-sm text-gray-600 mb-1">Termin odbioru</p>
+              <p class="font-semibold text-gray-900">
+                @if (getPickupDeadline(order.shipment?.placed_at); as deadline) {
+                  {{ deadline | date: 'dd.MM.yyyy HH:mm' }}
+                } @else {
+                  <span class="text-gray-500">Brak danych o terminie</span>
+                }
+              </p>
+            </div>
+          } @else if (order.items[0]?.due_date && order.status !== 'returned' && order.status !== 'canceled') {
+            <div class="col-span-2">
+              <p class="text-sm text-gray-600 mb-1">Termin zwrotu</p>
+              <p
+                class="font-semibold"
+                [class.text-red-600]="isOverdue(order.items[0].due_date)"
+                [class.text-gray-900]="!isOverdue(order.items[0].due_date)"
+              >
+                {{ order.items[0].due_date | date: 'dd.MM.yyyy' }}
+                @if (!isOverdue(order.items[0].due_date)) {
+                  <span class="text-sm font-normal text-gray-500"></span>
+                } @else {
+                  <span class="text-sm font-normal text-red-600 inline-flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                    </svg>
+                    opóźniony zwrot!
+                  </span>
+                }
+              </p>
+            </div>
+          }
+        </div>
+
+        <!-- Books List -->
+        <div>
+          <h3 class="text-lg font-semibold text-[#004E89] mb-3">Książki w zamówieniu</h3>
+          <div class="space-y-3">
+            @for (group of getGroupedItems(); track group.item.isbn) {
+              <div class="flex gap-4 bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition">
+                <img
+                  [ngSrc]="group.item.thumbnail || 'https://via.placeholder.com/96x128'"
+                  width="64"
+                  height="85"
+                  alt="Okładka książki"
+                  class="w-16 h-21 object-cover rounded shadow-sm"
+                />
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-semibold text-[#004E89] text-base mb-1 line-clamp-2">{{ group.item.title }}</h4>
+                  <p class="text-gray-700 text-sm mb-0.5">{{ group.item.authors }}</p>
+
+                  @if (group.item.publisher) {
+                    <p class="text-gray-500 text-xs mb-0.5">{{ group.item.publisher }}</p>
+                  }
+
+                  <p class="text-gray-500 text-xs mb-1">ISBN: {{ group.item.isbn }}</p>
+
+                  <div class="mt-2 inline-block bg-blue-100 text-blue-700 px-2.5 py-1 rounded text-xs font-medium">
+                    Liczba sztuk: {{ group.quantity }}
+                  </div>
+
+                  @if (group.item.returned_at) {
+                    <p class="text-green-600 text-sm mt-2 flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                      </svg>
+                      Zwrócono {{ group.item.returned_at | date: 'dd.MM.yyyy' }}
+                    </p>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Ready for Pickup -->
+        @if (order.status === 'ready_for_pickup' && order.shipment) {
+          <div class="bg-green-50 border-2 border-green-200 rounded-xl p-6">
+            <div class="flex items-center gap-2 mb-5">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-green-600">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              <h3 class="text-lg font-bold text-green-800">Twoje książki czekają!</h3>
+            </div>
+
+            <div class="mb-5">
+              <p class="text-sm text-gray-700 mb-1 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                </svg>
+                Miejsce odbioru
+              </p>
+              <p class="font-semibold text-gray-900 text-base">
+                {{ order.shipment.locker.street }}, {{ order.shipment.locker.city }}
+              </p>
+            </div>
+
+            @if (pickupQrCode()) {
+              <div class="bg-white rounded-xl p-5 border-2 border-gray-200">
+                <div class="flex justify-center mb-4">
+                  <img
+                    [src]="pickupQrCode()"
+                    alt="QR Code odbioru"
+                    class="border-2 border-gray-300 rounded-lg"
+                    width="180"
+                    height="180"
+                  />
+                </div>
+
+                <div class="text-center">
+                  <p class="text-sm text-gray-700 mb-2">Kod odbioru</p>
+                  <button
+                    (click)="copyCode(order.shipment.pickup_code)"
+                    class="group inline-flex items-center gap-3 bg-gray-100 hover:bg-gray-200 border-2 border-gray-300 hover:border-gray-400 px-5 py-3 rounded-lg transition cursor-pointer"
+                    title="Kliknij aby skopiować"
+                  >
+                    <code class="text-2xl font-mono font-bold text-gray-800">
+                      {{ order.shipment.pickup_code }}
+                    </code>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-600 group-hover:text-gray-800 transition">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 7.5V6.108c0-1.135.845-2.098 1.976-2.192.373-.03.748-.057 1.123-.08M15.75 18H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08M15.75 18.75v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5A3.375 3.375 0 0 0 6.375 7.5H5.25m11.9-3.664A2.251 2.251 0 0 0 15 2.25h-1.5a2.251 2.251 0 0 0-2.15 1.586m5.8 0c.065.21.1.433.1.664v.75h-6V4.5c0-.231.035-.454.1-.664M6.75 7.5H4.875c-.621 0-1.125.504-1.125 1.125v12c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V16.5a9 9 0 0 0-9-9Z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            }
+
+            <button
+              (click)="confirmPickup()"
+              [disabled]="processingAction()"
+              class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 mt-5"
+            >
+              {{ processingAction() ? 'Przetwarzanie...' : 'Potwierdzam odbiór' }}
+            </button>
+          </div>
+        }
+
+        <!-- Picked Up -->
+        @if (order.status === 'picked_up') {
+          <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-5">
+            <div class="flex items-center gap-2 mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-blue-600">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              <h3 class="text-lg font-bold text-blue-800">Książki odebrane</h3>
+            </div>
+
+            <button
+              (click)="startReturn()"
+              class="w-full bg-[#004E89] text-white py-3 rounded-lg font-semibold hover:bg-[#0074D9] transition flex items-center justify-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+              Zwróć książki
+            </button>
+          </div>
+        }
+
+        <!-- Return in Progress - ✅ FIXED -->
+        @if (order.status === 'return_in_progress' && order.shipment && canShowReturnQR()) {
+          <div class="bg-orange-50 border-2 border-orange-200 rounded-xl p-6">
+            <div class="flex items-center gap-2 mb-5">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-orange-600">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+              <h3 class="text-lg font-bold text-orange-800">Zwrot w toku</h3>
+            </div>
+
+            <div class="mb-5">
+              <p class="text-sm text-gray-700 mb-1 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                </svg>
+                Miejsce zwrotu
+              </p>
+              <p class="font-semibold text-gray-900 text-base">
+                {{ order.shipment.locker.street }}, {{ order.shipment.locker.city }}
+              </p>
+            </div>
+
+            @if (returnQrCode()) {
+              <div class="bg-white rounded-xl p-5 border-2 border-gray-200">
+                <div class="flex justify-center mb-4">
+                  <img
+                    [src]="returnQrCode()"
+                    alt="QR Code zwrotu"
+                    class="border-2 border-gray-300 rounded-lg"
+                    width="180"
+                    height="180"
+                  />
+                </div>
+
+                <div class="text-center">
+                  <p class="text-sm text-gray-700 mb-2">Kod zwrotu</p>
+                  <button
+                    (click)="copyCode(order.shipment.pickup_code)"
+                    class="group inline-flex items-center gap-3 bg-gray-100 hover:bg-gray-200 border-2 border-gray-300 hover:border-gray-400 px-5 py-3 rounded-lg transition cursor-pointer"
+                    title="Kliknij aby skopiować"
+                  >
+                    <code class="text-2xl font-mono font-bold text-gray-800">
+                      {{ order.shipment.pickup_code }}
+                    </code>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-600 group-hover:text-gray-800 transition">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 7.5V6.108c0-1.135.845-2.098 1.976-2.192.373-.03.748-.057 1.123-.08M15.75 18H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08M15.75 18.75v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5A3.375 3.375 0 0 0 6.375 7.5H5.25m11.9-3.664A2.251 2.251 0 0 0 15 2.25h-1.5a2.251 2.251 0 0 0-2.15 1.586m5.8 0c.065.21.1.433.1.664v.75h-6V4.5c0-.231.035-.454.1-.664M6.75 7.5H4.875c-.621 0-1.125.504-1.125 1.125v12c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V16.5a9 9 0 0 0-9-9Z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            }
+
+            <button
+              (click)="confirmReturn()"
+              [disabled]="processingAction()"
+              class="w-full bg-orange-600 text-white py-3 rounded-lg font-semibold hover:bg-orange-700 transition disabled:opacity-50 mt-5"
+            >
+              {{ processingAction() ? 'Przetwarzanie...' : 'Potwierdzam zwrot' }}
+            </button>
+          </div>
+        }
+
+        <!-- ✅ NOWA SEKCJA - Po potwierdzeniu zwrotu -->
+        @if (order.status === 'return_in_progress' && order.shipment && !canShowReturnQR()) {
+          <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-5 text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-blue-600 mx-auto mb-3">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            <h3 class="text-lg font-bold text-blue-800 mb-2">Książki w książkomacie</h3>
+            <p class="text-gray-700">Zwrot zostanie sfinalizowany po odbiorze przez kuriera.</p>
+          </div>
+        }
+
+        <!-- Returned -->
+        @if (order.status === 'returned') {
+          <div class="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-5 text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-emerald-600 mx-auto mb-3">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            <h3 class="text-lg font-bold text-emerald-800">Zamówienie zakończone</h3>
+          </div>
+        }
+
+        <!-- Canceled -->
+        @if (order.status === 'canceled') {
+          <div class="bg-red-50 border-2 border-red-200 rounded-xl p-5 text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-red-600 mx-auto mb-3">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            <h3 class="text-lg font-bold text-red-800 mb-2">Zamówienie anulowane</h3>
+            <p class="text-gray-700">To zamówienie zostało anulowane.</p>
+          </div>
+        }
+      }
+
+      <!-- STEP 2: SELECT LOCKER -->
+      @if (returnStep() === 'select_locker') {
+        <div>
+          <h3 class="text-lg font-semibold text-[#004E89] mb-4">Wybierz książkomat do zwrotu</h3>
+
+          @if (loadingLockers()) {
+            <div class="space-y-3">
+              @for (i of [1,2,3]; track i) {
+                <div class="bg-gray-100 rounded-lg p-4 animate-pulse">
+                  <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              }
+            </div>
+          }
+
+          @if (!loadingLockers()) {
+            <div class="space-y-3 mb-4">
+              @for (locker of lockers(); track locker.id) {
+                <div
+                  (click)="selectLocker(locker)"
+                  [ngClass]="{
+                    'border-blue-600 border-2 bg-blue-50': selectedLocker()?.id === locker.id,
+                    'border-gray-300 hover:border-blue-600 hover:bg-blue-50': selectedLocker()?.id !== locker.id
+                  }"
+                  class="border rounded-lg p-4 cursor-pointer transition"
+                >
+                  <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                      <p class="font-semibold text-[#004E89]">{{ locker.locker_code }}</p>
+                      <p class="text-gray-700">{{ locker.street }}</p>
+                      <p class="text-sm text-gray-600">{{ locker.city }}, {{ locker.postal_code }}</p>
+                    </div>
+                    @if (selectedLocker()?.id === locker.id) {
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-blue-600">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                      </svg>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
+            <div class="flex gap-3">
+              <button
+                (click)="cancelLockerSelection()"
+                class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
+              >
+                Anuluj
+              </button>
+              <button
+                (click)="confirmLockerSelection()"
+                [disabled]="!selectedLocker() || processingAction()"
+                class="flex-1 bg-[#004E89] text-white py-3 rounded-lg font-semibold hover:bg-[#0074D9] transition disabled:opacity-50"
+              >
+                {{ processingAction() ? 'Przetwarzanie...' : 'Potwierdź wybór' }}
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>

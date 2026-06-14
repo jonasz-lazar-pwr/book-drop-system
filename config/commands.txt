@@ -12,4 +12,10 @@ docker exec -it bookdrop-database \
 docker exec -it bookdrop-backend \
   sh -c "PYTHONPATH=/app python core/verify_models.py"
 
+docker exec -i bookdrop-database \
+  psql -U bookdrop -d bookdrop < bookdrop_dump_20251216_0609.sql
+
+docker exec -i bookdrop-database \
+  pg_dump -U bookdrop -d bookdrop > bookdrop_dump_$(date +%Y%m%d_%H%M).sql
+
 curl -X POST http://localhost:8000/api/seed/run

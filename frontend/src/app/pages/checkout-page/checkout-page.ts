@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { NavbarComponent } from '@shared/navbar/navbar.component';
+import { NavbarComponent } from '@shared/components/navbar/navbar.component';
 import { LockerSearch } from '@pages/checkout-page/components/locker-search/locker-search';
 import { LockerMap } from '@pages/checkout-page/components/locker-map/locker-map';
 import { CheckoutService } from '@services/checkout.service';

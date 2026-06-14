@@ -3,6 +3,60 @@
 <div class="p-8 max-w-6xl mx-auto">
   <h1 class="text-3xl font-semibold mb-8 text-[#004E89]">Zamówienia</h1>
 
+  <!-- 🔥 ZAKŁADKI Z LICZNIKAMI -->
+  <div class="border-b border-gray-200 mb-6">
+    <nav class="flex space-x-6">
+      @for (tab of tabCounts(); track tab.key) {
+        <button
+          (click)="switchTab(tab.key)"
+          [class]="activeTab() === tab.key
+          ? 'border-[#004E89] text-[#004E89]'
+          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+          class="py-4 px-1 border-b-2 font-medium transition whitespace-nowrap flex items-center gap-1">
+          {{ tab.label }}
+          @if (tab.count > 0) {
+            <span class="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full font-medium">
+            ({{ tab.count }})
+          </span>
+          }
+        </button>
+      }
+    </nav>
+  </div>
+
+  <!-- 🔥 FILTRY - RESPONSYWNY LAYOUT -->
+  <div class="flex gap-4 mb-6 flex-wrap items-end">
+    <!-- WYSZUKIWANIE - flex-1 (zajmuje resztę przestrzeni) -->
+    <input
+      type="text"
+      placeholder="Szukaj po nazwisku lub email..."
+      [value]="searchQuery()"
+      (input)="searchQuery.set($any($event.target).value)"
+      class="flex-1 min-w-[280px] px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#004E89]">
+
+    <!-- Status - STAŁY 240px -->
+    <select
+      [value]="selectedStatusFilter()"
+      (change)="selectedStatusFilter.set($any($event.target).value)"
+      class="w-[240px] px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#004E89] bg-white">
+      @for (option of currentStatusOptions; track option.value) {
+        <option [value]="option.value">{{ option.label }}</option>
+      }
+    </select>
+
+    <!-- Sortowanie - STAŁY 280px -->
+    <select
+      [value]="sortMode()"
+      (change)="sortMode.set($any($event.target).value)"
+      class="w-[280px] px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#004E89] bg-white">
+      <option value="date_desc">Data: najnowsze najpierw</option>
+      <option value="date_asc">Data: najstarsze najpierw</option>
+      <option value="reader_desc">Czytelnik: Z → A</option>
+      <option value="reader_asc">Czytelnik: A → Z</option>
+    </select>
+  </div>
+
+  <!-- LOADING -->
   @if (loading()) {
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       @for (_ of [1,2,3,4,5,6]; track _) {
@@ -11,60 +65,72 @@
     </div>
   }
 
+  <!-- LISTA ZAMÓWIEŃ - NOWE KAFELKI -->
   @if (!loading()) {
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    @if (displayedOrders().length === 0) {
+      <div class="text-center py-12 text-gray-500">
+        <p class="text-lg">Brak zamówień w tej kategorii</p>
+        @if (selectedStatusFilter() || searchQuery()) {
+          <p class="text-sm mt-2">Spróbuj zmienić filtry lub wyszukiwanie</p>
+        }
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        @for (o of displayedOrders(); track o.order_id) {
+          <div class="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-all duration-200 h-full">
+            <!-- 🔥 ROW 1: UUID + STATUS BADGE -->
+            <div class="flex justify-between items-start mb-4">
+              <h3 class="font-semibold text-lg text-[#004E89]">
+                {{ formatOrderId(o.order_id) }}
+              </h3>
+              <span
+                class="px-3 py-1 rounded-full text-xs font-semibold tracking-wide"
+                [ngClass]="statusClass(o.status)">
+                {{ o.status | statusLabel }}
+              </span>
+            </div>
 
-      @for (o of orders(); track o.order_id) {
+            <!-- 🔥 ROW 2: IMIĘ I NAZWISKO (zamiast maila) -->
+            <div class="mb-3">
+              <p class="text-gray-900 font-medium text-base leading-tight">
+                {{ o.reader_first_name }} {{ o.reader_last_name }}
+              </p>
+            </div>
 
-        <div class="bg-white rounded-xl shadow p-5">
-          <div class="flex justify-between items-start mb-3">
-            <span class="font-medium text-[#004E89]">
-              {{ o.reader_first_name }} {{ o.reader_last_name }}
-            </span>
+            <!-- 🔥 ROW 3: SUB-STATUS (bez emoji) -->
+            @if (activeTab() === 'active' || activeTab() === 'returns') {
+              <p class="text-sm text-gray-600 mb-4 leading-relaxed">
+                {{ getSubStatusLabel(o.status) }}
+              </p>
+            }
 
-            <span
-              class="px-2 py-1 rounded text-xs font-medium"
-              [ngClass]="statusClass(o.status)"
-            >
-              {{ o.status | statusLabel }}
-            </span>
+            <!-- 🔥 ROW 4: DATA -->
+            <p class="text-gray-500 text-sm font-medium mb-6">
+              Zamówiono: {{ o.created_at | date:'dd.MM.yyyy HH:mm' }}
+            </p>
+
+            <!-- 🔥 ROW 5: PRZYCISK -->
+            <button
+              class="w-full bg-[#004E89] hover:bg-[#0074D9] text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              (click)="openOrderModal(o)">
+              {{ getButtonLabel(o) }}
+            </button>
           </div>
-
-          <p class="text-gray-500 text-sm">
-            Zamówiono:
-            <span class="font-medium">{{ o.created_at | date:'yyyy-MM-dd HH:mm' }}</span>
-          </p>
-
-          <button
-            class="mt-4 bg-[#004E89] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#0074D9] transition w-full"
-            (click)="openOrderModal(o)"
-          >
-            {{ o.status === 'new' ? 'Przypisz egzemplarze' : 'Szczegóły' }}
-          </button>
-        </div>
-
-      }
-
-    </div>
-
-    @if (orders().length === 0) {
-      <p class="text-center text-gray-500 mt-10">
-        Brak zamówień do wyświetlenia.
-      </p>
+        }
+      </div>
     }
   }
 
+  <!-- MODALE -->
   @if (selectedAssignOrderId()) {
     <app-librarian-order-assign
       [orderId]="selectedAssignOrderId()!"
-      (closed)="closeAssign()"
-    />
+      (closed)="closeAssign()" />
   }
 
   @if (selectedDetailsOrderId()) {
     <app-librarian-order-details
       [orderId]="selectedDetailsOrderId()!"
-      (closed)="closeDetails()"
-    />
+      (closed)="closeDetails()" />
   }
 </div>

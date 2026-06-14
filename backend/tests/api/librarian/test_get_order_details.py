@@ -1,156 +1,178 @@
-# === tests/api/librarian/test_get_order_details.py ===
+"""Tests for GET /api/librarian/orders/{id} endpoint."""
 
 import pytest
 
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import (
-    Book,
-    BookItem,
-    Order,
-    OrderRequestedItem,
-    User,
-)
-from models.enums import (
-    BookLocation,
-    OrderStatus,
-    UserRole,
-)
+from models import Book, BookItem, Order, OrderRequestedItem, User
+from models.enums import BookLocation, OrderStatus
 
 
 @pytest.mark.asyncio
-async def test_get_order_details_returns_correct_structure(
-    client: AsyncClient, db_session: AsyncSession
+async def test_get_order_details_success(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    librarian_token: str,
+    reader_user: User,
 ):
-    """Should return full order details including requested books + available copies."""
-
-    # --- Arrange: librarian ---
-    librarian = User(
-        email="lib@example.com",
-        password="hashed",  # noqa: S106
-        role=UserRole.LIBRARIAN,
-        first_name="Lib",
-        last_name="One",
-    )
-
-    # --- Readers, books ---
-    reader = User(
-        email="reader@example.com",
-        password="hashed",  # noqa: S106
-        role=UserRole.READER,
-        first_name="Reader",
-        last_name="One",
-    )
-
+    """Test successful retrieval of order details."""
+    # Create book
     book = Book(
-        isbn="111-222-333",
-        title="Clean Code",
-        authors="Robert Martin",
+        isbn="9788379246199",
+        title="Test Book",
+        authors="Test Author",
+        publisher="Test Publisher",
+        published_date="2020",
     )
+    db_session.add(book)
 
-    # Save users + book
-    db_session.add_all([librarian, reader, book])
-    await db_session.commit()
-    await db_session.refresh(librarian)
-    await db_session.refresh(reader)
-
-    # --- Order + requested items ---
-    order = Order(reader_id=reader.id, status=OrderStatus.NEW)
-    db_session.add(order)
-    await db_session.flush()  # generate order.id now
-
-    requested = OrderRequestedItem(order_id=order.id, isbn=book.isbn, quantity=2)
-
-    # Available copies
-    bi1 = BookItem(isbn=book.isbn, is_available=True, current_location=BookLocation.LIBRARY)
-    bi2 = BookItem(isbn=book.isbn, is_available=True, current_location=BookLocation.LIBRARY)
-
-    db_session.add_all([requested, bi1, bi2])
-    await db_session.commit()
-
-    # --- Act ---
-    res = await client.get(
-        f"/api/librarian/orders/{order.id}",
-        headers={"Authorization": f"Bearer test-{librarian.id}"},
+    # Create available book items
+    item1 = BookItem(
+        isbn=book.isbn,
+        is_available=True,
+        current_location=BookLocation.LIBRARY,
     )
-
-    # --- Assert ---
-    assert res.status_code == 200
-    data = res.json()
-
-    assert data["order_id"] == str(order.id)
-    assert data["status"] == order.status.value
-    assert data["reader_email"] == reader.email
-
-    # Books requested
-    assert len(data["books"]) == 1
-    assert data["books"][0]["isbn"] == book.isbn
-    assert data["books"][0]["title"] == "Clean Code"
-    assert data["books"][0]["quantity"] == 2
-
-    # Available items
-    assert book.isbn in data["available_items"]
-    assert len(data["available_items"][book.isbn]) == 2
-
-
-@pytest.mark.asyncio
-async def test_get_order_details_not_found(client: AsyncClient, db_session: AsyncSession):
-    """Should return 404 for a non-existing order."""
-
-    # Need a valid librarian so authorization passes
-    librarian = User(
-        email="lib2@example.com",
-        password="hashed",  # noqa: S106
-        role=UserRole.LIBRARIAN,
-        first_name="Lib2",
-        last_name="Test",
+    item2 = BookItem(
+        isbn=book.isbn,
+        is_available=True,
+        current_location=BookLocation.LIBRARY,
     )
-    db_session.add(librarian)
-    await db_session.commit()
-    await db_session.refresh(librarian)
+    db_session.add_all([item1, item2])
 
-    non_existing_id = "99999999-9999-9999-9999-999999999999"
-
-    res = await client.get(
-        f"/api/librarian/orders/{non_existing_id}",
-        headers={"Authorization": f"Bearer test-{librarian.id}"},
-    )
-
-    assert res.status_code == 404
-    assert "not found" in res.json()["detail"].lower()
-
-
-@pytest.mark.asyncio
-async def test_get_order_details_forbidden_for_reader(
-    client: AsyncClient, db_session: AsyncSession
-):
-    """Should return 403 when non-librarian tries to access."""
-
-    # Create a normal reader
-    reader = User(
-        email="user@example.com",
-        password="hashed",  # noqa: S106
-        role=UserRole.READER,
-        first_name="Normal",
-        last_name="User",
-    )
-    db_session.add(reader)
-    await db_session.commit()
-    await db_session.refresh(reader)
-
-    # Create an order assigned to them
-    order = Order(reader_id=reader.id, status=OrderStatus.NEW)
+    # Create order
+    order = Order(reader_id=reader_user.id, status=OrderStatus.NEW)
     db_session.add(order)
     await db_session.commit()
     await db_session.refresh(order)
 
-    # --- Act: reader tries to access librarian endpoint ---
-    res = await client.get(
+    # Add requested item
+    requested = OrderRequestedItem(
+        order_id=order.id,
+        isbn=book.isbn,
+        quantity=2,
+    )
+    db_session.add(requested)
+    await db_session.commit()
+
+    # Get order details
+    response = await client.get(
         f"/api/librarian/orders/{order.id}",
-        headers={"Authorization": f"Bearer test-{reader.id}"},
+        headers={"Authorization": f"Bearer {librarian_token}"},
     )
 
-    # --- Assert ---
-    assert res.status_code == 403
-    assert "librarian" in res.json()["detail"].lower()
+    assert response.status_code == 200
+    data = response.json()
+
+    # Verify structure
+    assert data["order_id"] == str(order.id)
+    assert data["status"] == OrderStatus.NEW
+    assert data["reader_email"] == reader_user.email
+    assert data["reader_first_name"] == reader_user.first_name
+    assert data["reader_last_name"] == reader_user.last_name
+
+    # Verify books
+    assert len(data["books"]) == 1
+    assert data["books"][0]["isbn"] == book.isbn
+    assert data["books"][0]["title"] == book.title
+    assert data["books"][0]["quantity"] == 2
+
+    # Verify available items
+    assert book.isbn in data["available_items"]
+    assert len(data["available_items"][book.isbn]) == 2
+
+    first_item = data["available_items"][book.isbn][0]
+    assert "id" in first_item
+    assert first_item["location"] == BookLocation.LIBRARY
+    assert first_item["is_available"] is True
+
+
+@pytest.mark.asyncio
+async def test_get_order_details_not_found(
+    client: AsyncClient,
+    librarian_token: str,
+):
+    """Test getting details for non-existent order."""
+    fake_uuid = "00000000-0000-0000-0000-000000000000"
+
+    response = await client.get(
+        f"/api/librarian/orders/{fake_uuid}",
+        headers={"Authorization": f"Bearer {librarian_token}"},
+    )
+
+    assert response.status_code == 404
+    assert "not found" in response.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_get_order_details_invalid_uuid(
+    client: AsyncClient,
+    librarian_token: str,
+):
+    """Test getting details with invalid UUID format."""
+    response = await client.get(
+        "/api/librarian/orders/invalid-uuid",
+        headers={"Authorization": f"Bearer {librarian_token}"},
+    )
+
+    assert response.status_code == 422  # Validation error
+
+
+@pytest.mark.asyncio
+async def test_get_order_details_wrong_status(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    librarian_token: str,
+    reader_user: User,
+):
+    """Test getting details for order that is not NEW."""
+    order = Order(reader_id=reader_user.id, status=OrderStatus.PREPARED)
+    db_session.add(order)
+    await db_session.commit()
+    await db_session.refresh(order)
+
+    response = await client.get(
+        f"/api/librarian/orders/{order.id}",
+        headers={"Authorization": f"Bearer {librarian_token}"},
+    )
+
+    assert response.status_code == 400
+    assert "new" in response.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_get_order_details_unauthorized(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    reader_user: User,
+):
+    """Test getting order details without authentication."""
+    order = Order(reader_id=reader_user.id, status=OrderStatus.NEW)
+    db_session.add(order)
+    await db_session.commit()
+    await db_session.refresh(order)
+
+    response = await client.get(f"/api/librarian/orders/{order.id}")
+
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_get_order_details_forbidden_for_reader(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    reader_token: str,
+    reader_user: User,
+):
+    """Test that readers cannot access order details endpoint."""
+    order = Order(reader_id=reader_user.id, status=OrderStatus.NEW)
+    db_session.add(order)
+    await db_session.commit()
+    await db_session.refresh(order)
+
+    response = await client.get(
+        f"/api/librarian/orders/{order.id}",
+        headers={"Authorization": f"Bearer {reader_token}"},
+    )
+
+    assert response.status_code == 403

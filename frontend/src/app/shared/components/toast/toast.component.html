@@ -1,0 +1,30 @@
+<!-- src/app/shared/components/toast/toast.component.html -->
+@if (toast(); as currentToast) {
+  <div class="fixed top-4 left-4 z-[100] animate-slide-in">
+    <div
+      [ngClass]="{
+        'bg-green-100 border-green-300 text-green-800': currentToast.type === 'success',
+        'bg-red-100 border-red-300 text-red-800': currentToast.type === 'error',
+        'bg-blue-100 border-blue-300 text-blue-800': currentToast.type === 'info'
+      }"
+      class="flex items-center gap-3 px-4 py-3 rounded-lg border-2 shadow-lg min-w-[300px] max-w-md"
+    >
+      <!-- Icon -->
+      <div [innerHTML]="getIcon(currentToast.type)"></div>
+
+      <!-- Message -->
+      <p class="flex-1 font-medium text-sm">{{ currentToast.message }}</p>
+
+      <!-- Close Button -->
+      <button
+        (click)="close()"
+        class="hover:opacity-70 transition"
+        aria-label="Zamknij powiadomienie"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  </div>
+}
