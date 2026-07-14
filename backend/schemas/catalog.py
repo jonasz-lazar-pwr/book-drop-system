@@ -15,6 +15,7 @@ class BookListItem(BaseModel):
     published_date: Optional[str]
     thumbnail: Optional[str]
     available_count: int = Field(default=0)
+    relevance_score: Optional[int] = None
 
 
 class BookListResponse(BaseModel):

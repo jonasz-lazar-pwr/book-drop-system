@@ -1,6 +1,6 @@
 # === repositories/catalog_repository.py ===
 
-from sqlalchemy import Integer, and_, func, or_, select
+from sqlalchemy import Integer, and_, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import Book, BookItem
@@ -22,6 +22,7 @@ class CatalogRepository:
                     func.lower(Book.title).ilike(search_term),
                     func.lower(Book.authors).ilike(search_term),
                     func.lower(Book.isbn).ilike(search_term),
+                    func.lower(Book.description).ilike(search_term),
                 )
             )
 
@@ -67,6 +68,28 @@ class CatalogRepository:
         return stmt.order_by(order_expr)
 
     @staticmethod
+    def _build_relevance_score(search: str):
+        """Return a CASE expression scoring how closely a book matches the search term."""
+        s = search.strip().lower()
+        # SQL CASE evaluates conditions top-to-bottom and returns the score of the FIRST match.
+        # This means a title match always wins over an author match, etc.
+        return case(
+            # 100 — exact title or ISBN match (user knows exactly what they want)
+            (or_(func.lower(Book.title) == s, func.lower(Book.isbn) == s), 100),
+            # 80 — title starts with the term (e.g. "hist" matches "Historia Polski")
+            (func.lower(Book.title).ilike(s + "%"), 80),
+            # 60 — title contains the term anywhere (e.g. "historia" inside a longer title)
+            (func.lower(Book.title).ilike("%" + s + "%"), 60),
+            # 40 — author name contains the term
+            (func.lower(Book.authors).ilike("%" + s + "%"), 40),
+            # 20 — term appears only in the description (weakest signal)
+            (func.lower(Book.description).ilike("%" + s + "%"), 20),
+            # 0 — no match at all (these rows are already excluded by the WHERE filter,
+            #     but the else_ guards against edge cases)
+            else_=0,
+        ).label("relevance_score")
+
+    @staticmethod
     async def list_books(
         db: AsyncSession,
         page: int = 1,
@@ -74,25 +97,38 @@ class CatalogRepository:
         filters: CatalogFilters | None = None,
     ):
         """Return paginated book list with filters and sorting."""
+        searching = bool(filters and filters.search)
+
+        base_cols = [
+            Book.isbn,
+            Book.title,
+            Book.authors,
+            Book.publisher,
+            Book.published_date,
+            Book.thumbnail,
+            func.count(BookItem.id)
+            .filter(BookItem.is_available.is_(True))
+            .label("available_count"),
+        ]
+
+        if searching:
+            relevance_score = CatalogRepository._build_relevance_score(filters.search)
+            base_cols.append(relevance_score)
+
         stmt = (
-            select(
-                Book.isbn,
-                Book.title,
-                Book.authors,
-                Book.publisher,
-                Book.published_date,
-                Book.thumbnail,
-                func.count(BookItem.id)
-                .filter(BookItem.is_available.is_(True))
-                .label("available_count"),
-            )
+            select(*base_cols)
             .join(BookItem, Book.isbn == BookItem.isbn, isouter=True)
             .group_by(Book.isbn)
         )
 
         if filters:
             stmt = CatalogRepository._apply_filters(stmt, filters)
-            stmt = CatalogRepository._apply_sorting(stmt, filters.sort)
+            if searching:
+                stmt = stmt.order_by(
+                    CatalogRepository._build_relevance_score(filters.search).desc()
+                )
+            else:
+                stmt = CatalogRepository._apply_sorting(stmt, filters.sort)
 
         total_query = select(func.count(func.distinct(Book.isbn)))
         if filters:

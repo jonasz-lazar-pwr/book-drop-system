@@ -7,4 +7,5 @@ export interface Book {
   description: string;
   thumbnail: string;
   available_count: number;
+  relevance_score?: number;
 }

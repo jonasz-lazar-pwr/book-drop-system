@@ -5,7 +5,7 @@
     <div class="relative w-full md:w-2/3">
       <input
         type="text"
-        placeholder="Szukaj po tytule, autorze lub ISBN..."
+        placeholder="Szukaj po tytule, autorze, opisie lub ISBN..."
         class="border border-gray-300 rounded-lg w-full pl-10 pr-4 py-2.5 shadow-sm focus:ring-2 focus:ring-[#0074D9] h-11"
         (input)="onSearch($event)"
       />
@@ -23,6 +23,15 @@
           d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
         />
       </svg>
+
+      @if (isSearching()) {
+        <div class="flex items-center gap-1.5 mt-1.5 text-xs text-[#0074D9] font-medium">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+            <path fill-rule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" clip-rule="evenodd" />
+          </svg>
+          Wyniki posortowane przez AI według trafności
+        </div>
+      }
     </div>
 
     <div class="flex items-center gap-3 w-full md:w-1/3">
@@ -124,6 +133,19 @@
             >
               {{ book.available_count > 0 ? 'Dostępna' : 'Niedostępna' }}
             </span>
+
+            @if (isSearching() && book.relevance_score) {
+              <div class="mt-2 flex items-center gap-2">
+                <span class="text-xs text-gray-400 shrink-0">Trafność</span>
+                <div class="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    class="h-1.5 rounded-full bg-[#0074D9] transition-all duration-500"
+                    [style.width.%]="book.relevance_score"
+                  ></div>
+                </div>
+                <span class="text-xs text-[#0074D9] font-medium shrink-0">{{ book.relevance_score }}%</span>
+              </div>
+            }
 
             @if (book.available_count > 0) {
               <button

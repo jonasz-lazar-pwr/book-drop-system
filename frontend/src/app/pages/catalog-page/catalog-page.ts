@@ -36,6 +36,7 @@ export class CatalogPage {
   cartItems = signal<Set<string>>(new Set());
 
   totalPages = computed(() => Math.ceil(this.total() / this.limit));
+  isSearching = computed(() => this.search().trim().length > 0);
 
   constructor() {
     this.loadBooks();
